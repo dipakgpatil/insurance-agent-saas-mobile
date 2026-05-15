@@ -4,7 +4,6 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { API_BASE_URL } from '@/api/client'
 import { Avatar } from '@/components/Avatar'
 import { Card } from '@/components/Card'
 import { ScreenContainer } from '@/components/ScreenContainer'
@@ -32,6 +31,7 @@ export default function ProfileScreen() {
   }
 
   const versionText = `v${Constants.expoConfig?.version ?? '0.1.0'}`
+  const role = user?.roles?.join(', ') || 'Agent'
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -42,35 +42,27 @@ export default function ProfileScreen() {
 
         <Card>
           <View style={styles.userRow}>
-            <Avatar name={user?.name ?? user?.email ?? 'P'} size={56} />
+            <Avatar name={user?.name ?? user?.email ?? 'P'} size={64} />
             <View style={{ flex: 1 }}>
               <Text style={styles.userName} numberOfLines={1}>
                 {user?.name ?? 'Account'}
               </Text>
-              <Text style={styles.userMeta} numberOfLines={1}>
-                {user?.email ?? user?.mobile ?? ''}
-              </Text>
-              <Text style={styles.userMeta} numberOfLines={1}>
-                Role: {user?.roles?.join(', ') || 'Agent'}
-              </Text>
+              {user?.email ? (
+                <View style={styles.metaLine}>
+                  <Ionicons name="mail" size={14} color={colors.textSubtle} />
+                  <Text style={styles.userMeta} numberOfLines={1}>
+                    {user.email}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={styles.metaLine}>
+                <Ionicons name="briefcase" size={14} color={colors.textSubtle} />
+                <Text style={styles.userMeta} numberOfLines={1}>
+                  {role}
+                </Text>
+              </View>
             </View>
           </View>
-        </Card>
-
-        <Card style={{ padding: 0 }}>
-          <SettingRow
-            icon="information-circle"
-            label="API endpoint"
-            value={API_BASE_URL}
-          />
-          <SettingRow
-            icon="apps"
-            label="Tenant"
-            value={user?.tenant_id ?? '—'}
-            divider
-          />
-          <SettingRow icon="finger-print" label="User ID" value={user?.id ?? '—'} divider />
-          <SettingRow icon="code-slash" label="App version" value={versionText} divider />
         </Card>
 
         <Pressable
@@ -88,36 +80,10 @@ export default function ProfileScreen() {
         </Pressable>
 
         <Text style={styles.footer}>
-          PolicyPulse mobile · Built for insurance agents on iOS &amp; Android.
+          PolicyPulse mobile · {versionText}
         </Text>
       </ScreenContainer>
     </SafeAreaView>
-  )
-}
-
-function SettingRow({
-  icon,
-  label,
-  value,
-  divider,
-}: {
-  icon: keyof typeof Ionicons.glyphMap
-  label: string
-  value: string
-  divider?: boolean
-}) {
-  return (
-    <View style={[styles.settingRow, divider ? styles.rowDivider : null]}>
-      <View style={styles.settingIcon}>
-        <Ionicons name={icon} size={18} color={colors.primaryDark} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Text style={styles.settingValue} numberOfLines={1}>
-          {value}
-        </Text>
-      </View>
-    </View>
   )
 }
 
@@ -139,38 +105,15 @@ const styles = StyleSheet.create({
     ...typography.heading,
     color: colors.text,
   },
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 4,
+  },
   userMeta: {
     ...typography.caption,
     color: colors.textSubtle,
-    marginTop: 2,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  rowDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingLabel: {
-    ...typography.captionBold,
-    color: colors.textMuted,
-  },
-  settingValue: {
-    ...typography.caption,
-    color: colors.textSubtle,
-    marginTop: 2,
   },
   signOut: {
     flexDirection: 'row',

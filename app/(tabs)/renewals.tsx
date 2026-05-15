@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import * as Linking from 'expo-linking'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import {
@@ -18,14 +19,15 @@ import { RenewalBadge } from '@/components/RenewalBadge'
 import { Skeleton } from '@/components/Skeleton'
 import { useCustomers } from '@/hooks/useCustomers'
 import { usePolicies } from '@/hooks/usePolicies'
+import { CATEGORY_VISUAL, classifyPolicy } from '@/lib/classify'
 import { formatCurrency } from '@/lib/currency'
-import { formatDateShort, relativeRenewal } from '@/lib/dates'
+import { relativeRenewal } from '@/lib/dates'
 import {
   buildRenewals,
   type RenewalBucket,
   type RenewalEntry,
 } from '@/lib/insights'
-import { colors, radii, spacing, typography } from '@/theme'
+import { colors, radii, spacing, toneStyles, typography } from '@/theme'
 
 type FilterKey = 'all' | 'overdue' | 'today' | 'tomorrow' | 'this_week' | 'this_month' | 'later'
 
@@ -151,23 +153,19 @@ export default function RenewalsScreen() {
 
       {loading ? (
         <View style={styles.loadingList}>
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} height={72} radius={radii.md} style={styles.skeletonRow} />
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} height={160} radius={radii.md} style={styles.skeletonRow} />
           ))}
         </View>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="checkmark-circle"
-          title={
-            renewals.length === 0
-              ? 'No renewals yet'
-              : 'Nothing matches'
-          }
+          title={renewals.length === 0 ? 'No renewals yet' : 'Nothing matches'}
           message={
             renewals.length === 0
               ? 'Import customers and policies on the web app, then dated renewals will appear here.'
               : query
-                ? `Try a different search.`
+                ? 'Try a different search.'
                 : 'Switch filters above to see other renewals.'
           }
         />
@@ -176,7 +174,7 @@ export default function RenewalsScreen() {
           data={filtered}
           keyExtractor={(item) => item.policy.id}
           contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -184,41 +182,109 @@ export default function RenewalsScreen() {
               tintColor={colors.primary}
             />
           }
-          renderItem={({ item }) => <RenewalRow entry={item} />}
+          renderItem={({ item }) => <RenewalCard entry={item} />}
         />
       )}
     </SafeAreaView>
   )
 }
 
-function RenewalRow({ entry }: { entry: RenewalEntry }) {
+function RenewalCard({ entry }: { entry: RenewalEntry }) {
+  const category = classifyPolicy(entry.policy)
+  const visual = CATEGORY_VISUAL[category]
+  const palette = toneStyles(visual.tone)
+  const mobileDigits = (entry.customer?.mobile ?? '').replace(/\D/g, '')
+  const hasMobile = mobileDigits.length >= 7
+  const hasEmail = Boolean(entry.customer?.email)
+
+  const openCustomer = () => {
+    if (entry.customer) router.push(`/customers/${entry.customer.id}`)
+  }
+
+  const onCall = () => {
+    if (hasMobile) Linking.openURL(`tel:${mobileDigits}`).catch(() => {})
+  }
+  const onWhatsApp = () => {
+    if (!hasMobile) return
+    const normalized = mobileDigits.length === 10 ? `91${mobileDigits}` : mobileDigits
+    Linking.openURL(`https://wa.me/${normalized}`).catch(() => {})
+  }
+  const onEmail = () => {
+    if (entry.customer?.email) Linking.openURL(`mailto:${entry.customer.email}`).catch(() => {})
+  }
+
   return (
-    <Pressable
-      onPress={() => router.push(`/renewals/${entry.policy.id}`)}
-      android_ripple={{ color: colors.surfaceMuted }}
-      style={({ pressed }) => [styles.row, pressed ? { backgroundColor: colors.surfaceMuted } : null]}
-    >
-      <View style={{ flex: 1, gap: 4 }}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
+    <View style={styles.card}>
+      {/* Top row: category badge + premium */}
+      <View style={styles.cardTopRow}>
+        <View style={[styles.categoryChip, { backgroundColor: palette.background }]}>
+          <Ionicons name={visual.icon} size={14} color={palette.foreground} />
+          <Text style={[styles.categoryChipText, { color: palette.foreground }]}>
+            {visual.label}
+          </Text>
+        </View>
+        <Text style={styles.amount}>{formatCurrency(entry.policy.premium_amount)}</Text>
+      </View>
+
+      {/* Body: customer + policy info */}
+      <Pressable onPress={openCustomer} android_ripple={{ color: colors.surfaceMuted }} style={styles.bodyPress}>
+        <Text style={styles.customerName} numberOfLines={1}>
           {entry.customer?.full_name ?? 'Unknown customer'}
         </Text>
-        <Text style={styles.rowSub} numberOfLines={1}>
-          {entry.policy.policy_number ?? 'No policy number'}
-          {entry.policy.policy_name ? ` · ${entry.policy.policy_name}` : ''}
+        <Text style={styles.policyLine} numberOfLines={1}>
+          <Text style={styles.policyNumber}>
+            {entry.policy.policy_number ?? 'No policy number'}
+          </Text>
+          {entry.policy.policy_name ? (
+            <Text style={styles.policyName}> · {entry.policy.policy_name}</Text>
+          ) : null}
         </Text>
-        <View style={styles.rowMetaLine}>
+
+        <View style={styles.dateRow}>
           <RenewalBadge bucket={entry.bucket} compact />
-          <Text style={styles.rowMicro}>{formatDateShort(entry.renewalDate)}</Text>
-          <Text style={styles.rowMicroDot}>·</Text>
-          <Text style={styles.rowMicro}>{relativeRenewal(entry.renewalDate)}</Text>
+          <Text style={styles.relativeDate}>{relativeRenewal(entry.renewalDate)}</Text>
+          {entry.policy.status !== 'active' ? (
+            <Badge label={entry.policy.status} tone="neutral" compact />
+          ) : null}
         </View>
+      </Pressable>
+
+      {/* Action row: Call, WhatsApp, Email */}
+      <View style={styles.actionRow}>
+        <ActionBtn icon="call" label="Call" onPress={onCall} disabled={!hasMobile} />
+        <View style={styles.actionDivider} />
+        <ActionBtn icon="logo-whatsapp" label="WhatsApp" onPress={onWhatsApp} disabled={!hasMobile} />
+        <View style={styles.actionDivider} />
+        <ActionBtn icon="mail" label="Email" onPress={onEmail} disabled={!hasEmail} />
       </View>
-      <View style={{ alignItems: 'flex-end', gap: 6 }}>
-        <Text style={styles.amount}>{formatCurrency(entry.policy.premium_amount)}</Text>
-        {entry.policy.status !== 'active' ? (
-          <Badge label={entry.policy.status} tone="neutral" compact />
-        ) : null}
-      </View>
+    </View>
+  )
+}
+
+function ActionBtn({
+  icon,
+  label,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  onPress: () => void
+  disabled?: boolean
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      android_ripple={{ color: colors.surfaceMuted, borderless: false }}
+      style={({ pressed }) => [
+        styles.actionBtn,
+        pressed && !disabled ? { backgroundColor: colors.surfaceMuted } : null,
+        disabled ? { opacity: 0.4 } : null,
+      ]}
+    >
+      <Ionicons name={icon} size={16} color={colors.primaryDark} />
+      <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
   )
 }
@@ -295,11 +361,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
-  separator: {
-    height: 1,
-    backgroundColor: 'transparent',
-    marginVertical: 0,
-  },
   loadingList: {
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
@@ -307,44 +368,88 @@ const styles = StyleSheet.create({
   skeletonRow: {
     marginBottom: spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+  card: {
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.sm,
-    gap: spacing.md,
+    overflow: 'hidden',
   },
-  rowTitle: {
-    ...typography.bodyBold,
-    color: colors.text,
-  },
-  rowSub: {
-    ...typography.caption,
-    color: colors.textSubtle,
-  },
-  rowMetaLine: {
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    flexWrap: 'wrap',
-    marginTop: 2,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
-  rowMicro: {
-    ...typography.caption,
-    color: colors.textSubtle,
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
   },
-  rowMicroDot: {
-    ...typography.caption,
-    color: colors.textSubtle,
-    marginHorizontal: 2,
+  categoryChipText: {
+    ...typography.captionBold,
   },
   amount: {
     ...typography.bodyBold,
     color: colors.text,
+    fontSize: 16,
+  },
+  bodyPress: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    gap: 4,
+  },
+  customerName: {
+    ...typography.heading,
+    color: colors.text,
+  },
+  policyLine: {
+    ...typography.caption,
+  },
+  policyNumber: {
+    ...typography.captionBold,
+    color: colors.text,
+  },
+  policyName: {
+    color: colors.textSubtle,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: 6,
+  },
+  relativeDate: {
+    ...typography.captionBold,
+    color: colors.textMuted,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  actionLabel: {
+    ...typography.captionBold,
+    color: colors.primaryDark,
+  },
+  actionDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+    alignSelf: 'stretch',
   },
 })

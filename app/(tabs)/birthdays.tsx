@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Avatar } from '@/components/Avatar'
 import { BirthdayBadge } from '@/components/BirthdayBadge'
 import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Skeleton } from '@/components/Skeleton'
@@ -177,15 +179,30 @@ function WishModal({
   onSent: (message: string) => void
 }) {
   const [template, setTemplate] = useState<WishTemplate>(BIRTHDAY_WISHES[0])
+  const [message, setMessage] = useState('')
+  const [edited, setEdited] = useState(false)
   const [sending, setSending] = useState(false)
 
-  const message = useMemo(() => {
-    if (!entry) return ''
-    return buildWishMessage(template, entry.customer.full_name)
-  }, [template, entry])
+  useEffect(() => {
+    if (entry) {
+      setMessage(buildWishMessage(template, entry.customer.full_name))
+      setEdited(false)
+    }
+  }, [entry])
+
+  const applyTemplate = useCallback(
+    (tpl: WishTemplate) => {
+      setTemplate(tpl)
+      if (entry) {
+        setMessage(buildWishMessage(tpl, entry.customer.full_name))
+        setEdited(false)
+      }
+    },
+    [entry],
+  )
 
   const handleSend = async () => {
-    if (!entry) return
+    if (!entry || !message.trim()) return
     setSending(true)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     const result = await sendWish({ mobile: entry.customer.mobile, message })
@@ -210,7 +227,10 @@ function WishModal({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.modalBackdrop}>
+      <KeyboardAvoidingView
+        style={styles.modalBackdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.modalSheet}>
           <View style={styles.modalHandle} />
           <View style={styles.modalHeader}>
@@ -226,45 +246,66 @@ function WishModal({
             </Pressable>
           </View>
 
-          <Text style={styles.modalLabel}>Pick a wish</Text>
-          <View style={styles.wishList}>
-            {BIRTHDAY_WISHES.map((tpl) => (
-              <Pressable
-                key={tpl.id}
-                onPress={() => setTemplate(tpl)}
-                style={[
-                  styles.wishChip,
-                  template.id === tpl.id ? styles.wishChipActive : null,
-                ]}
-              >
-                <Text
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12 }}
+          >
+            <Text style={styles.modalLabel}>Start with a template</Text>
+            <View style={styles.wishList}>
+              {BIRTHDAY_WISHES.map((tpl) => (
+                <Pressable
+                  key={tpl.id}
+                  onPress={() => applyTemplate(tpl)}
                   style={[
-                    styles.wishChipText,
-                    template.id === tpl.id ? styles.wishChipTextActive : null,
+                    styles.wishChip,
+                    template.id === tpl.id && !edited ? styles.wishChipActive : null,
                   ]}
                 >
-                  {tpl.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                  <Text
+                    style={[
+                      styles.wishChipText,
+                      template.id === tpl.id && !edited ? styles.wishChipTextActive : null,
+                    ]}
+                  >
+                    {tpl.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-          <Card style={styles.preview}>
-            <Text style={styles.previewText}>{message}</Text>
-          </Card>
+            <View style={styles.editorHeader}>
+              <Text style={styles.modalLabel}>Edit message</Text>
+              {edited ? <Text style={styles.editedFlag}>Edited</Text> : null}
+            </View>
+            <TextInput
+              value={message}
+              onChangeText={(text) => {
+                setMessage(text)
+                setEdited(true)
+              }}
+              multiline
+              textAlignVertical="top"
+              placeholder="Write a personal birthday message…"
+              placeholderTextColor={colors.textSubtle}
+              style={styles.messageInput}
+            />
+            <Text style={styles.charCount}>{message.length} chars</Text>
+          </ScrollView>
 
           <Button
             label={entry.customer.mobile ? 'Send via WhatsApp' : 'Copy message'}
             icon={entry.customer.mobile ? 'logo-whatsapp' : 'copy'}
             onPress={handleSend}
             loading={sending}
+            disabled={!message.trim()}
           />
           <Text style={styles.modalFooter}>
             If WhatsApp isn&apos;t installed, we&apos;ll try SMS, then copy the message to
             your clipboard.
           </Text>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -423,14 +464,31 @@ const styles = StyleSheet.create({
   wishChipTextActive: {
     color: '#ffffff',
   },
-  preview: {
-    backgroundColor: colors.surfaceMuted,
-    maxHeight: 220,
+  editorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  previewText: {
-    ...typography.body,
+  editedFlag: {
+    ...typography.micro,
+    color: colors.primary,
+  },
+  messageInput: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    minHeight: 140,
+    maxHeight: 220,
     color: colors.text,
+    fontSize: 15,
     lineHeight: 22,
+  },
+  charCount: {
+    ...typography.micro,
+    color: colors.textSubtle,
+    textAlign: 'right',
   },
   modalFooter: {
     ...typography.caption,

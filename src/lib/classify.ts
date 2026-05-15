@@ -1,4 +1,6 @@
+import type { Ionicons } from '@expo/vector-icons'
 import type { PolicyRead } from '@/api/types'
+import type { Tone } from '@/theme'
 
 export type PolicyCategory = 'health' | 'car' | 'bike' | 'life' | 'other'
 
@@ -10,6 +12,19 @@ export const CATEGORY_LABELS: Record<PolicyCategory, string> = {
   bike: 'Bike',
   life: 'Life',
   other: 'Other',
+}
+
+type IonName = keyof typeof Ionicons.glyphMap
+
+export const CATEGORY_VISUAL: Record<
+  PolicyCategory,
+  { icon: IonName; tone: Tone; label: string }
+> = {
+  car: { icon: 'car-sport', tone: 'primary', label: 'Car' },
+  bike: { icon: 'bicycle', tone: 'accent', label: 'Bike' },
+  health: { icon: 'heart', tone: 'danger', label: 'Health' },
+  life: { icon: 'leaf', tone: 'success', label: 'Life' },
+  other: { icon: 'shield-checkmark', tone: 'info', label: 'Other' },
 }
 
 export function classifyPolicy(policy: PolicyRead): PolicyCategory {
