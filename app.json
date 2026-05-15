@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "PolicyPulse",
+    "slug": "policypulse-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "policypulse",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0f172a",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.policypulse.mobile",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["whatsapp", "tel", "mailto", "sms"]
+      }
+    },
+    "android": {
+      "package": "com.policypulse.mobile",
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "policypulse" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiBaseUrl": "https://insurance-agent-saas-production.up.railway.app/api/v1"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+import { Redirect } from 'expo-router'
+import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { useAuth } from '@/context/useAuth'
+import { colors } from '@/theme'
+
+export default function AuthGate() {
+  const { user, initializing } = useAuth()
+
+  if (initializing) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (!user) {
+    return <Redirect href="/login" />
+  }
+
+  return <Redirect href="/(tabs)" />
+}
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
+  },
+})
