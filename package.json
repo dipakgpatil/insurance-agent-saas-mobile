@@ -8,6 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "prebuild:android": "expo prebuild --platform android",
+    "apk:debug": "expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
+    "eas:android:preview": "eas build --platform android --profile preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -15,6 +18,7 @@
     "@expo/vector-icons": "14.0.4",
     "@react-native-async-storage/async-storage": "1.23.1",
     "expo": "~51.0.39",
+    "expo-auth-session": "~5.5.2",
     "expo-clipboard": "~6.0.3",
     "expo-constants": "~16.0.2",
     "expo-file-system": "~17.0.1",
@@ -27,6 +31,7 @@
     "expo-splash-screen": "~0.27.7",
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "~3.0.7",
+    "expo-web-browser": "~13.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
@@ -44,6 +49,7 @@
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.0",
     "eslint-config-expo": "^7.1.2",
+    "eslint-import-resolver-typescript": "^3.6.1",
     "typescript": "~5.3.3"
   }
 }

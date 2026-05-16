@@ -1,5 +1,5 @@
 import { apiRequest } from './client'
-import type { AuthUser, TokenResponse } from './types'
+import type { AuthUser, GoogleAuthResponse, TokenResponse } from './types'
 
 export function login(emailOrMobile: string, password: string): Promise<TokenResponse> {
   return apiRequest<TokenResponse>('/auth/login', {
@@ -12,6 +12,13 @@ export function refreshToken(refreshTokenValue: string): Promise<TokenResponse> 
   return apiRequest<TokenResponse>('/auth/refresh', {
     method: 'POST',
     body: JSON.stringify({ refresh_token: refreshTokenValue }),
+  })
+}
+
+export function loginWithGoogle(idToken: string): Promise<GoogleAuthResponse> {
+  return apiRequest<GoogleAuthResponse>('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ id_token: idToken }),
   })
 }
 

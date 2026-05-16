@@ -250,7 +250,7 @@ function ContactActions({
   email: string | null
   style?: object
 }) {
-  const buttons: Array<{ icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }> = []
+  const buttons: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }[] = []
   if (mobile) {
     buttons.push({
       icon: 'call',

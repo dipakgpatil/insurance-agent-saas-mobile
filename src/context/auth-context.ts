@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { AuthUser } from '@/api/types'
+import type { AgencyOnboardingRequest, AuthUser, GoogleAuthResponse } from '@/api/types'
 
 export type StoredSession = {
   accessToken: string
@@ -13,6 +13,8 @@ export type AuthContextValue = {
   accessToken: string | null
   initializing: boolean
   login: (emailOrMobile: string, password: string) => Promise<AuthUser>
+  loginWithGoogle: (idToken: string) => Promise<GoogleAuthResponse>
+  completeAgencyOnboarding: (payload: AgencyOnboardingRequest) => Promise<AuthUser>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }

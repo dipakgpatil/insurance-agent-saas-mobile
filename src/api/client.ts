@@ -1,15 +1,6 @@
-import Constants from 'expo-constants'
+import { API_BASE_URL } from '@/lib/config'
 
-const fallbackBaseUrl = 'https://insurance-agent-saas-production.up.railway.app/api/v1'
-
-const fromEnv =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  (Constants.expoConfig?.extra as { apiBaseUrl?: string } | undefined)?.apiBaseUrl
-
-export const API_BASE_URL = (fromEnv && fromEnv.trim().length > 0 ? fromEnv : fallbackBaseUrl).replace(
-  /\/+$/,
-  '',
-)
+export { API_BASE_URL }
 
 export class ApiError extends Error {
   status: number

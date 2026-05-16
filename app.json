@@ -4,15 +4,18 @@
     "slug": "policypulse-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "policypulse",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash-icon.png",
       "backgroundColor": "#0f172a",
       "resizeMode": "contain"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "1",
       "bundleIdentifier": "com.policypulse.mobile",
       "infoPlist": {
         "LSApplicationQueriesSchemes": ["whatsapp", "tel", "mailto", "sms"]
@@ -20,10 +23,13 @@
     },
     "android": {
       "package": "com.policypulse.mobile",
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
+      "permissions": ["INTERNET"],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -40,7 +46,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://insurance-agent-saas-production.up.railway.app/api/v1"
+      "apiBaseUrl": "https://insurance-agent-saas-production.up.railway.app/api/v1",
+      "googleWebClientId": "",
+      "googleIosClientId": "",
+      "googleAndroidClientId": ""
     }
   }
 }

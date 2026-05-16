@@ -18,6 +18,7 @@ Native iOS & Android client for the PolicyPulse SaaS, built with [Expo](https://
 - **Reusable UI primitives** (`src/components/`): `Card`, `Badge`, `RenewalBadge`, `BirthdayBadge`, `KpiCard`, `Skeleton`, `EmptyState`, `ErrorBanner`, `Button`, `Avatar`, `SectionHeader`, `PressableRow`, `ScreenContainer`, `MiniBarChart`
 
 - **Tenant-aware API client** (`src/api/`): typed wrappers around `/auth`, `/customers`, `/policies`, `/documents`
+- **Native signup foundation**: Google sign-in/signup posts the platform identity token to `POST /auth/google`; new users are routed through mobile agency onboarding (`POST /onboarding/agency`) and then land on the dashboard.
 
 ## Run it
 
@@ -36,6 +37,9 @@ npm run web
 
 # Just open the dev menu / QR code
 npm start
+
+# Build a local Android debug APK on Windows
+npm run apk:debug
 ```
 
 If you don't have Xcode/Android Studio set up, install **Expo Go** on your phone, run `npm start`, and scan the QR code.
@@ -61,11 +65,40 @@ To test against the local backend instead of Railway, use your machine's LAN IP 
 EXPO_PUBLIC_API_BASE_URL=http://192.168.1.42:8000/api/v1
 ```
 
+### Google signup on Android and iOS
+
+This app is registered with these native identifiers:
+
+```text
+Android package: com.policypulse.mobile
+iOS bundle ID:  com.policypulse.mobile
+URL scheme:     policypulse
+```
+
+For Google signup/sign-in, create OAuth clients in the same Google/Firebase project used by the backend verifier, then set:
+
+```text
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<iOS OAuth client id for com.policypulse.mobile>
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=<Android OAuth client id for com.policypulse.mobile>
+```
+
+For Android, register the debug or release SHA-1/SHA-256 fingerprint with the Android OAuth client. After native prebuild, you can inspect the local debug fingerprint with:
+
+```bash
+cd android
+gradlew.bat signingReport
+```
+
+The backend must also trust the same Google audience/client IDs through its environment configuration.
+
 ## Auth / session model
 
 Mirrors the web app exactly:
 
 - `POST /auth/login` returns `{ access_token, refresh_token, user }`
+- `POST /auth/google` returns the same tokens plus onboarding flags
+- New Google users with no tenant are routed to `/onboarding/agency`, which calls `POST /onboarding/agency` and starts the free plan
 - Tokens are persisted in **`expo-secure-store`** (encrypted on-device storage) under the key `policypulse.session.v1`
 - On launch, the stored token is verified against `GET /auth/me`; expired tokens cause an automatic redirect to `/login`
 - `POST /auth/logout` is called on sign-out, then local state is cleared regardless of network success
@@ -79,7 +112,8 @@ Strict reuse of the existing backend — no schema changes:
 
 | Screen | Endpoints called |
 |---|---|
-| Login | `POST /auth/login` |
+| Login | `POST /auth/login`, `POST /auth/google` |
+| Agency signup | `POST /onboarding/agency` |
 | Session boot | `GET /auth/me` |
 | Sign-out | `POST /auth/logout` |
 | Dashboard, Renewals, Birthdays, Analytics | `GET /customers?limit=1000`, `GET /policies?limit=1000` |
@@ -127,7 +161,7 @@ In all cases the user can share via the native iOS/Android share sheet (`expo-sh
 2. **Server-aggregated dashboard stats** — all KPIs and buckets are computed client-side from the full customer/policy lists. Fine up to a few thousand records per tenant; past that we'd want `GET /dashboard/summary`.
 3. **Push notifications** — birthdays/renewals today would be ideal as push reminders. Requires backend to manage Expo push tokens and a scheduled worker.
 4. **Document upload from mobile** — currently view + share only. To accept Excel/PDF uploads from the phone, wire `expo-document-picker` to `POST /documents/upload` (the multipart endpoint is already there).
-5. **Google sign-in / signup** — web has `POST /auth/google` + `POST /onboarding/agency`. Mobile only does email/password sign-in.
+5. **Google sign-in client IDs** — code is wired, but Firebase/Google client IDs and backend accepted audiences must be set per environment.
 6. **Customer detail** — not yet implemented as a dedicated screen on mobile. Renewal detail covers the most-used context; a deeper customer screen is a logical next step.
 7. **Pagination** — lists request `limit=1000`/`limit=200` and assume that's enough. Add `?cursor=` or `?page=` once tenants outgrow that.
 

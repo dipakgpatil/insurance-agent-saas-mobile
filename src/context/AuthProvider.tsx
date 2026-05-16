@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
-import { fetchMe, login as loginApi, logout as logoutApi } from '@/api/auth'
+import { fetchMe, login as loginApi, loginWithGoogle as loginWithGoogleApi, logout as logoutApi } from '@/api/auth'
 import { ApiError } from '@/api/client'
+import { completeAgencyOnboarding as completeAgencyOnboardingApi } from '@/api/onboarding'
+import type { AgencyOnboardingRequest } from '@/api/types'
 import { AuthContext, type AuthContextValue, type StoredSession } from './auth-context'
 
 const STORAGE_KEY = 'policypulse.session.v1'
@@ -72,6 +74,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.user
   }, [])
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const response = await loginWithGoogleApi(idToken)
+    const stored: StoredSession = {
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
+      user: response.user,
+    }
+    setSession(stored)
+    await writeStored(stored)
+    return response
+  }, [])
+
+  const completeAgencyOnboarding = useCallback(
+    async (payload: AgencyOnboardingRequest) => {
+      if (!session) {
+        throw new Error('Sign in again to complete onboarding')
+      }
+      const response = await completeAgencyOnboardingApi(session.accessToken, payload)
+      const next: StoredSession = { ...session, user: response.user }
+      setSession(next)
+      await writeStored(next)
+      return response.user
+    },
+    [session],
+  )
+
   const logout = useCallback(async () => {
     if (session) {
       try {
@@ -106,10 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken: session?.accessToken ?? null,
       initializing,
       login,
+      loginWithGoogle,
+      completeAgencyOnboarding,
       logout,
       refreshUser,
     }),
-    [session, initializing, login, logout, refreshUser],
+    [session, initializing, login, loginWithGoogle, completeAgencyOnboarding, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

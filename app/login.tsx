@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
+import * as Google from 'expo-auth-session/providers/google'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import * as WebBrowser from 'expo-web-browser'
+import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -15,18 +17,68 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { useAuth } from '@/context/useAuth'
+import { googleClientIds } from '@/lib/config'
 import { colors, radii, spacing, typography } from '@/theme'
 
 const DEMO_EMAIL = 'admin1@demoagt1.test'
 const DEMO_PASSWORD = 'DemoPass123!'
 
+WebBrowser.maybeCompleteAuthSession()
+
 export default function LoginScreen() {
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const [email, setEmail] = useState(DEMO_EMAIL)
   const [password, setPassword] = useState(DEMO_PASSWORD)
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    androidClientId: googleClientIds.android || undefined,
+    iosClientId: googleClientIds.ios || undefined,
+    webClientId: googleClientIds.web || undefined,
+    scopes: ['openid', 'profile', 'email'],
+  })
+
+  const googleConfigured = Boolean(
+    googleClientIds.web || googleClientIds.android || googleClientIds.ios,
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    async function handleGoogleResponse() {
+      if (!googleResponse) return
+      if (googleResponse.type !== 'success') {
+        setGoogleSubmitting(false)
+        return
+      }
+      const idToken =
+        googleResponse.authentication?.idToken ??
+        (typeof googleResponse.params.id_token === 'string' ? googleResponse.params.id_token : null)
+      if (!idToken) {
+        setError('Google did not return an identity token. Check the OAuth client configuration.')
+        setGoogleSubmitting(false)
+        return
+      }
+      try {
+        const response = await loginWithGoogle(idToken)
+        if (cancelled) return
+        if (response.onboarding_required || response.user.tenant_id === null) {
+          router.replace('/onboarding/agency')
+        } else {
+          router.replace('/(tabs)')
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Google sign in failed')
+      } finally {
+        if (!cancelled) setGoogleSubmitting(false)
+      }
+    }
+    void handleGoogleResponse()
+    return () => {
+      cancelled = true
+    }
+  }, [googleResponse, loginWithGoogle])
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -38,6 +90,19 @@ export default function LoginScreen() {
       setError(err instanceof Error ? err.message : 'Sign in failed')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    setError(null)
+    if (!googleConfigured) {
+      setError('Google sign in is not configured yet. Add the Android/iOS client IDs in .env.')
+      return
+    }
+    setGoogleSubmitting(true)
+    const result = await promptGoogle()
+    if (result.type !== 'success') {
+      setGoogleSubmitting(false)
     }
   }
 
@@ -65,6 +130,21 @@ export default function LoginScreen() {
           </Text>
 
           {error ? <ErrorBanner message={error} /> : null}
+
+          <Button
+            label="Continue with Google"
+            onPress={handleGoogle}
+            loading={googleSubmitting}
+            disabled={!googleRequest || submitting}
+            icon="logo-google"
+            variant="secondary"
+          />
+
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or sign in with password</Text>
+            <View style={styles.divider} />
+          </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>Email or mobile</Text>
@@ -117,7 +197,7 @@ export default function LoginScreen() {
           />
 
           <Text style={styles.footer}>
-            New to PolicyPulse? Sign up from the web app and come back here to log in.
+            New to PolicyPulse? Use Google to create your agency workspace on this phone.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -169,6 +249,20 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: 6,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    ...typography.caption,
+    color: colors.textSubtle,
   },
   label: {
     ...typography.captionBold,

@@ -16,6 +16,46 @@ export type TokenResponse = {
   user: AuthUser
 }
 
+export type GoogleAuthResponse = TokenResponse & {
+  is_new_user: boolean
+  onboarding_required: boolean
+  email_verified: boolean
+  picture_url: string | null
+}
+
+export type TenantRead = {
+  id: string
+  agent_code: string
+  name: string
+  business_name: string | null
+  email: string | null
+  mobile: string | null
+  plan_code: string | null
+  status: string
+}
+
+export type AgencyOnboardingRequest = {
+  user_name: string
+  mobile: string
+  agency_name?: string | null
+  business_name?: string | null
+  agent_code?: string | null
+  address_line1?: string | null
+  address_line2?: string | null
+  city?: string | null
+  state?: string | null
+  pincode?: string | null
+  country?: string | null
+}
+
+export type AgencyOnboardingResponse = {
+  tenant: TenantRead
+  user: AuthUser
+  plan_code: string
+  subscription_status: string
+  onboarding_completed: boolean
+}
+
 export type CustomerRead = {
   id: string
   tenant_id: string

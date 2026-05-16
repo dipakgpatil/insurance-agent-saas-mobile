@@ -18,6 +18,10 @@ export default function AuthGate() {
     return <Redirect href="/login" />
   }
 
+  if (!user.tenant_id && user.user_type !== 'platform_admin') {
+    return <Redirect href="/onboarding/agency" />
+  }
+
   return <Redirect href="/(tabs)" />
 }
 

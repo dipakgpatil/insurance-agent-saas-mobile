@@ -188,7 +188,7 @@ function WishModal({
       setMessage(buildWishMessage(template, entry.customer.full_name))
       setEdited(false)
     }
-  }, [entry])
+  }, [entry, template])
 
   const applyTemplate = useCallback(
     (tpl: WishTemplate) => {
