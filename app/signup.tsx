@@ -1,79 +1,31 @@
 import { Ionicons } from '@expo/vector-icons'
-import * as Google from 'expo-auth-session/providers/google'
 import { router } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { ErrorBanner } from '@/components/ErrorBanner'
-import { useAuth } from '@/context/useAuth'
-import { googleClientIds } from '@/lib/config'
+import { useGoogleAuthFlow } from '@/hooks/useGoogleAuthFlow'
+import type { GoogleAuthResponse } from '@/api/types'
 import { colors, spacing, typography } from '@/theme'
 
-WebBrowser.maybeCompleteAuthSession()
-
 export default function SignupScreen() {
-  const { loginWithGoogle } = useAuth()
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    androidClientId: googleClientIds.android || undefined,
-    iosClientId: googleClientIds.ios || undefined,
-    webClientId: googleClientIds.web || undefined,
-    scopes: ['openid', 'profile', 'email'],
+  const handleGoogleAuthenticated = useCallback((response: GoogleAuthResponse) => {
+    if (response.onboarding_required || response.user.tenant_id === null) {
+      router.replace('/onboarding/agency')
+    } else {
+      router.replace('/(tabs)')
+    }
+  }, [])
+
+  const google = useGoogleAuthFlow({
+    verb: 'sign up',
+    onAuthenticated: handleGoogleAuthenticated,
   })
 
-  const googleConfigured = Boolean(
-    googleClientIds.web || googleClientIds.android || googleClientIds.ios,
-  )
-
-  useEffect(() => {
-    let cancelled = false
-    async function handleGoogleResponse() {
-      if (!googleResponse) return
-      if (googleResponse.type !== 'success') {
-        setSubmitting(false)
-        return
-      }
-      const idToken =
-        googleResponse.authentication?.idToken ??
-        (typeof googleResponse.params.id_token === 'string' ? googleResponse.params.id_token : null)
-      if (!idToken) {
-        setError('Google did not return an identity token. Check the OAuth client configuration.')
-        setSubmitting(false)
-        return
-      }
-      try {
-        const response = await loginWithGoogle(idToken)
-        if (cancelled) return
-        if (response.onboarding_required || response.user.tenant_id === null) {
-          router.replace('/onboarding/agency')
-        } else {
-          router.replace('/(tabs)')
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Google signup failed')
-      } finally {
-        if (!cancelled) setSubmitting(false)
-      }
-    }
-    void handleGoogleResponse()
-    return () => {
-      cancelled = true
-    }
-  }, [googleResponse, loginWithGoogle])
-
   const handleSignup = async () => {
-    setError(null)
-    if (!googleConfigured) {
-      setError('Google signup is not configured yet. Add Android/iOS client IDs in app config.')
-      return
-    }
-    setSubmitting(true)
-    const result = await promptGoogle()
-    if (result.type !== 'success') setSubmitting(false)
+    await google.start()
   }
 
   return (
@@ -92,7 +44,7 @@ export default function SignupScreen() {
           sheet to onboard customers and policies from mobile.
         </Text>
 
-        {error ? <ErrorBanner message={error} /> : null}
+        {google.error ? <ErrorBanner message={google.error} /> : null}
 
         <Card style={styles.card}>
           <View style={styles.stepRow}>
@@ -112,8 +64,8 @@ export default function SignupScreen() {
         <Button
           label="Create account with Google"
           onPress={handleSignup}
-          loading={submitting}
-          disabled={!googleRequest}
+          loading={google.submitting}
+          disabled={!google.request}
           icon="logo-google"
         />
 

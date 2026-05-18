@@ -75,7 +75,15 @@ iOS bundle ID:  com.policypulse.mobile
 URL scheme:     policypulse
 ```
 
-For Google signup/sign-in, create OAuth clients in the same Google/Firebase project used by the backend verifier, then set:
+For Google signup/sign-in, create OAuth clients in the same Google/Firebase project used by the backend verifier.
+
+Firebase/Google Console setup:
+
+1. Enable Authentication -> Sign-in method -> Google.
+2. Add an Android app with package `com.policypulse.mobile`.
+3. Add SHA-1/SHA-256 fingerprints for the Android build you will test. For local debug builds, run `gradlew.bat signingReport` after prebuild; for EAS/Play release builds, use the release fingerprint.
+4. Add an iOS app with bundle ID `com.policypulse.mobile`.
+5. Copy the Web, Android, and iOS OAuth client IDs into the mobile app environment:
 
 ```text
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
@@ -90,7 +98,19 @@ cd android
 gradlew.bat signingReport
 ```
 
-The backend must also trust the same Google audience/client IDs through its environment configuration.
+The Railway backend must also trust the same token audiences. Set either all platform-specific values:
+
+```text
+GOOGLE_CLIENT_ID=<web OAuth client id>
+GOOGLE_ANDROID_CLIENT_ID=<Android OAuth client id>
+GOOGLE_IOS_CLIENT_ID=<iOS OAuth client id>
+```
+
+or set a comma-separated allow-list:
+
+```text
+GOOGLE_CLIENT_IDS=<web OAuth client id>,<Android OAuth client id>,<iOS OAuth client id>
+```
 
 ## Auth / session model
 
@@ -149,7 +169,7 @@ In all cases the user can share via the native iOS/Android share sheet (`expo-sh
 ## Assumptions
 
 1. The backend at `EXPO_PUBLIC_API_BASE_URL` is reachable from the device's network. On a real device hitting a local backend, replace `localhost` with the LAN IP.
-2. The signed-in user has a tenant. The mobile app does **not** implement the agency-onboarding form (`POST /onboarding/agency`) — new agencies must complete onboarding on the web app first.
+2. New Google users without a tenant complete agency onboarding in the mobile app through `POST /onboarding/agency`; the backend starts the free plan.
 3. Customers have `date_of_birth` set for birthdays to appear. The list is empty otherwise.
 4. Policy "category" (Health / Car / Bike / Life / Other) is inferred from `policy_name` + `policy_extra_data` using a regex classifier (`src/lib/classify.ts`) because the policy response returns segment/type as UUIDs, not codes.
 5. Renewal "Today / Tomorrow / Next 7 days / Overdue / This month / Later" is computed client-side from `policy.renewal_date`, identical to the web app's logic.
@@ -160,7 +180,7 @@ In all cases the user can share via the native iOS/Android share sheet (`expo-sh
 1. **Refresh-token rotation** — current sessions silently 401 once the access token expires (30 min default). Mobile should call `POST /auth/refresh` automatically on 401, but the backend rotation behavior needs verification first.
 2. **Server-aggregated dashboard stats** — all KPIs and buckets are computed client-side from the full customer/policy lists. Fine up to a few thousand records per tenant; past that we'd want `GET /dashboard/summary`.
 3. **Push notifications** — birthdays/renewals today would be ideal as push reminders. Requires backend to manage Expo push tokens and a scheduled worker.
-4. **Document upload from mobile** — currently view + share only. To accept Excel/PDF uploads from the phone, wire `expo-document-picker` to `POST /documents/upload` (the multipart endpoint is already there).
+4. **PDF policy upload from mobile** - Excel onboarding upload is wired; policy PDF upload/extraction from the phone is still a logical next step.
 5. **Google sign-in client IDs** — code is wired, but Firebase/Google client IDs and backend accepted audiences must be set per environment.
 6. **Customer detail** — not yet implemented as a dedicated screen on mobile. Renewal detail covers the most-used context; a deeper customer screen is a logical next step.
 7. **Pagination** — lists request `limit=1000`/`limit=200` and assume that's enough. Add `?cursor=` or `?page=` once tenants outgrow that.

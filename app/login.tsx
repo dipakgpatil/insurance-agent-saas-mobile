@@ -1,8 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
-import * as Google from 'expo-auth-session/providers/google'
 import { router } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,72 +15,44 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { useAuth } from '@/context/useAuth'
-import { googleClientIds } from '@/lib/config'
+import { useGoogleAuthFlow } from '@/hooks/useGoogleAuthFlow'
+import type { GoogleAuthResponse } from '@/api/types'
 import { colors, radii, spacing, typography } from '@/theme'
 
 const DEMO_EMAIL = 'admin1@demoagt1.test'
 const DEMO_PASSWORD = 'DemoPass123!'
 
-WebBrowser.maybeCompleteAuthSession()
-
 export default function LoginScreen() {
-  const { login, loginWithGoogle } = useAuth()
+  const { login } = useAuth()
   const [email, setEmail] = useState(DEMO_EMAIL)
   const [password, setPassword] = useState(DEMO_PASSWORD)
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    androidClientId: googleClientIds.android || undefined,
-    iosClientId: googleClientIds.ios || undefined,
-    webClientId: googleClientIds.web || undefined,
-    scopes: ['openid', 'profile', 'email'],
+
+  const handleGoogleAuthenticated = useCallback((response: GoogleAuthResponse) => {
+    if (response.onboarding_required || response.user.tenant_id === null) {
+      router.replace('/onboarding/agency')
+    } else {
+      router.replace('/(tabs)')
+    }
+  }, [])
+
+  const google = useGoogleAuthFlow({
+    verb: 'sign in',
+    onAuthenticated: handleGoogleAuthenticated,
   })
 
-  const googleConfigured = Boolean(
-    googleClientIds.web || googleClientIds.android || googleClientIds.ios,
-  )
+  const visibleError = error ?? google.error
 
-  useEffect(() => {
-    let cancelled = false
-    async function handleGoogleResponse() {
-      if (!googleResponse) return
-      if (googleResponse.type !== 'success') {
-        setGoogleSubmitting(false)
-        return
-      }
-      const idToken =
-        googleResponse.authentication?.idToken ??
-        (typeof googleResponse.params.id_token === 'string' ? googleResponse.params.id_token : null)
-      if (!idToken) {
-        setError('Google did not return an identity token. Check the OAuth client configuration.')
-        setGoogleSubmitting(false)
-        return
-      }
-      try {
-        const response = await loginWithGoogle(idToken)
-        if (cancelled) return
-        if (response.onboarding_required || response.user.tenant_id === null) {
-          router.replace('/onboarding/agency')
-        } else {
-          router.replace('/(tabs)')
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Google sign in failed')
-      } finally {
-        if (!cancelled) setGoogleSubmitting(false)
-      }
-    }
-    void handleGoogleResponse()
-    return () => {
-      cancelled = true
-    }
-  }, [googleResponse, loginWithGoogle])
+  const clearErrors = () => {
+    setError(null)
+    google.clearError()
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true)
-    setError(null)
+    clearErrors()
     try {
       await login(email.trim(), password)
       router.replace('/(tabs)')
@@ -95,15 +65,7 @@ export default function LoginScreen() {
 
   const handleGoogle = async () => {
     setError(null)
-    if (!googleConfigured) {
-      setError('Google sign in is not configured yet. Add the Android/iOS client IDs in .env.')
-      return
-    }
-    setGoogleSubmitting(true)
-    const result = await promptGoogle()
-    if (result.type !== 'success') {
-      setGoogleSubmitting(false)
-    }
+    await google.start()
   }
 
   return (
@@ -129,13 +91,13 @@ export default function LoginScreen() {
             Sign in to manage renewals, customers, and documents on the go.
           </Text>
 
-          {error ? <ErrorBanner message={error} /> : null}
+          {visibleError ? <ErrorBanner message={visibleError} /> : null}
 
           <Button
             label="Continue with Google"
             onPress={handleGoogle}
-            loading={googleSubmitting}
-            disabled={!googleRequest || submitting}
+            loading={google.submitting}
+            disabled={!google.request || submitting}
             icon="logo-google"
             variant="secondary"
           />
@@ -168,7 +130,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
-                placeholder="••••••••"
+                placeholder="Password"
                 placeholderTextColor={colors.textSubtle}
                 style={[styles.input, { flex: 1 }]}
                 returnKeyType="done"
