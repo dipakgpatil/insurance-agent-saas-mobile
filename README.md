@@ -38,8 +38,12 @@ npm run web
 # Just open the dev menu / QR code
 npm start
 
-# Build a local Android debug APK on Windows
+# Build a local standalone Android APK on Windows.
+# This embeds the JS bundle into the APK, so it does not need Metro at runtime.
 npm run apk:debug
+
+# Build a Metro-dependent development APK only when you are running `npm start`.
+npm run apk:dev
 ```
 
 If you don't have Xcode/Android Studio set up, install **Expo Go** on your phone, run `npm start`, and scan the QR code.

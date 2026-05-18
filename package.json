@@ -9,7 +9,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "prebuild:android": "expo prebuild --platform android",
-    "apk:debug": "expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
+    "bundle:android": "node -e \"require('fs').mkdirSync('android/app/src/main/assets',{recursive:true})\" && npx expo export:embed --platform android --dev false --entry-file node_modules/expo-router/entry.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res",
+    "apk:debug": "expo prebuild --platform android && npm run bundle:android && cd android && gradlew.bat assembleDebug",
+    "apk:standalone": "expo prebuild --platform android && npm run bundle:android && cd android && gradlew.bat assembleDebug",
+    "apk:dev": "expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
     "eas:android:preview": "eas build --platform android --profile preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
