@@ -197,7 +197,10 @@ export default function LoginScreen() {
           />
 
           <Text style={styles.footer}>
-            New to PolicyPulse? Use Google to create your agency workspace on this phone.
+            New to PolicyPulse?{' '}
+            <Text style={styles.footerLink} onPress={() => router.push('/signup')}>
+              Create an account
+            </Text>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -295,5 +298,9 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     textAlign: 'center',
     marginTop: spacing.md,
+  },
+  footerLink: {
+    ...typography.captionBold,
+    color: colors.primaryDark,
   },
 })

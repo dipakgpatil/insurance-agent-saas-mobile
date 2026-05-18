@@ -56,6 +56,44 @@ export type AgencyOnboardingResponse = {
   onboarding_completed: boolean
 }
 
+export type ImportMappingSuggestion = {
+  header: string
+  field: string | null
+  confidence: number
+  source: string
+  reason?: string | null
+}
+
+export type ExcelImportUploadResponse = {
+  import_id: string
+  document_id: string
+  status: string
+  source_file_name: string | null
+  source_sheet_name: string | null
+  total_rows: number
+  headers: string[]
+  sample_rows: Record<string, unknown>[]
+  suggested_mapping: Record<string, string>
+  mapping_confidence: Record<string, number>
+  mapping_suggestions: ImportMappingSuggestion[]
+  template_match: boolean
+  warnings: string[]
+}
+
+export type ConfirmImportMappingResponse = {
+  import_id: string
+  status: string
+  total_rows: number
+  processed_rows: number
+  failed_rows: number
+  created_customers: number
+  updated_customers: number
+  created_policies: number
+  updated_policies: number
+  created_vehicles: number
+  errors: Record<string, unknown>[]
+}
+
 export type CustomerRead = {
   id: string
   tenant_id: string
