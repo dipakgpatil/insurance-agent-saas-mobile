@@ -13,6 +13,7 @@
     "apk:debug": "expo prebuild --platform android && npm run bundle:android && cd android && gradlew.bat assembleDebug",
     "apk:standalone": "expo prebuild --platform android && npm run bundle:android && cd android && gradlew.bat assembleDebug",
     "apk:dev": "expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
+    "apk:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release-apk.ps1",
     "eas:android:preview": "eas build --platform android --profile preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
