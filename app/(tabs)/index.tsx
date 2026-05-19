@@ -9,7 +9,6 @@ import { Card } from '@/components/Card'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { KpiCard } from '@/components/KpiCard'
-import { RenewalBadge } from '@/components/RenewalBadge'
 import { ScreenContainer } from '@/components/ScreenContainer'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Skeleton } from '@/components/Skeleton'
@@ -24,8 +23,20 @@ import {
   buildBirthdays,
   buildRenewals,
   renewalsByBucket,
+  type RenewalBucket,
 } from '@/lib/insights'
-import { colors, radii, spacing, typography } from '@/theme'
+import { colors, radii, spacing, toneStyles, typography } from '@/theme'
+
+const BUCKET_TONE: Record<RenewalBucket, 'danger' | 'warning' | 'info' | 'primary' | 'accent' | 'neutral'> = {
+  overdue: 'danger',
+  today: 'warning',
+  tomorrow: 'info',
+  this_week: 'primary',
+  this_month: 'accent',
+  later: 'neutral',
+}
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
 export default function DashboardScreen() {
   const { user, accessToken } = useAuth()
@@ -92,6 +103,17 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>Hi {(user?.name ?? 'there').split(/\s+/)[0]} 👋</Text>
             <Text style={styles.greetingSub}>Here&apos;s what needs attention today.</Text>
           </View>
+          <Pressable
+            onPress={() => router.push('/import-excel')}
+            hitSlop={8}
+            android_ripple={{ color: colors.surfaceMuted, borderless: true }}
+            style={({ pressed }) => [
+              styles.headerActionBtn,
+              pressed ? { opacity: 0.7 } : null,
+            ]}
+          >
+            <Ionicons name="cloud-upload" size={20} color={colors.primaryDark} />
+          </Pressable>
           <Pressable onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
             <Avatar name={user?.name ?? user?.email ?? 'P'} size={40} />
           </Pressable>
@@ -229,32 +251,59 @@ export default function DashboardScreen() {
                 message="No renewals due in the next 60 days."
               />
             ) : (
-              data.upcoming.map((entry, index) => (
-                <Pressable
-                  key={entry.policy.id}
-                  onPress={() => router.push(`/renewals/${entry.policy.id}`)}
-                  android_ripple={{ color: colors.surfaceMuted }}
-                  style={({ pressed }) => [
-                    styles.listRow,
-                    index !== data.upcoming.length - 1 ? styles.listRowBorder : null,
-                    pressed ? { backgroundColor: colors.surfaceMuted } : null,
-                  ]}
-                >
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>
-                      {entry.customer?.full_name ?? 'Unknown customer'}
-                    </Text>
-                    <Text style={styles.rowSub} numberOfLines={1}>
-                      {entry.policy.policy_number ?? 'No policy number'} ·{' '}
-                      {formatDateShort(entry.renewalDate)}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                    <RenewalBadge bucket={entry.bucket} compact />
-                    <Text style={styles.rowMicro}>{relativeRenewal(entry.renewalDate)}</Text>
-                  </View>
-                </Pressable>
-              ))
+              data.upcoming.map((entry, index) => {
+                const bucketPalette = toneStyles(BUCKET_TONE[entry.bucket])
+                const renewalDay = entry.renewalDate.getDate()
+                const renewalMonth = MONTHS[entry.renewalDate.getMonth()]
+                const premium = toNumber(entry.policy.premium_amount)
+                return (
+                  <Pressable
+                    key={entry.policy.id}
+                    onPress={() => router.push(`/renewals/${entry.policy.id}`)}
+                    android_ripple={{ color: colors.surfaceMuted }}
+                    style={({ pressed }) => [
+                      styles.listRow,
+                      index !== data.upcoming.length - 1 ? styles.listRowBorder : null,
+                      pressed ? { backgroundColor: colors.surfaceMuted } : null,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.dashDateTear,
+                        {
+                          backgroundColor: bucketPalette.background,
+                          borderColor: bucketPalette.foreground,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.dashDateTearMonth, { color: bucketPalette.foreground }]}>
+                        {renewalMonth}
+                      </Text>
+                      <Text style={[styles.dashDateTearDay, { color: bucketPalette.foreground }]}>
+                        {renewalDay}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>
+                        {entry.customer?.full_name ?? 'Unknown customer'}
+                      </Text>
+                      <Text style={styles.rowSub} numberOfLines={1}>
+                        {entry.policy.policy_number ?? 'No policy number'}
+                      </Text>
+                      <Text
+                        style={[styles.dashRenewalLine, { color: bucketPalette.foreground }]}
+                        numberOfLines={1}
+                      >
+                        Renews {formatDateShort(entry.renewalDate)} · {relativeRenewal(entry.renewalDate)}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                      <Text style={styles.dashPremiumLabel}>PREMIUM</Text>
+                      <Text style={styles.dashPremium}>{compactCurrency(premium)}</Text>
+                    </View>
+                  </Pressable>
+                )
+              })
             )}
           </Card>
         </View>
@@ -365,7 +414,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  headerActionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
   },
   greeting: {
     ...typography.title,
@@ -439,9 +496,41 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     marginTop: 2,
   },
-  rowMicro: {
-    ...typography.caption,
+  dashDateTear: {
+    width: 44,
+    height: 48,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dashDateTearMonth: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  dashDateTearDay: {
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 22,
+    marginTop: 1,
+  },
+  dashRenewalLine: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  dashPremiumLabel: {
+    ...typography.micro,
     color: colors.textSubtle,
+    fontSize: 9,
+    letterSpacing: 0.6,
+  },
+  dashPremium: {
+    ...typography.bodyBold,
+    color: colors.text,
+    fontSize: 15,
   },
   skeletonStack: {
     gap: 1,

@@ -65,6 +65,27 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        <Card style={{ padding: 0 }}>
+          <Text style={styles.sectionLabel}>Tools</Text>
+          <ToolRow
+            icon="cloud-upload"
+            iconColor={colors.primary}
+            iconBg={colors.primaryLight}
+            title="Bulk import from Excel"
+            subtitle="Upload customers and policies from a spreadsheet — no laptop needed."
+            onPress={() => router.push('/import-excel')}
+            divider
+          />
+          <ToolRow
+            icon="people"
+            iconColor={colors.success}
+            iconBg={colors.successLight}
+            title="Refer agents and earn"
+            subtitle="Share your referral code and unlock benefits."
+            onPress={() => router.push('/(tabs)/referrals')}
+          />
+        </Card>
+
         <Pressable
           onPress={handleSignOut}
           android_ripple={{ color: '#fecaca' }}
@@ -84,6 +105,45 @@ export default function ProfileScreen() {
         </Text>
       </ScreenContainer>
     </SafeAreaView>
+  )
+}
+
+function ToolRow({
+  icon,
+  iconColor,
+  iconBg,
+  title,
+  subtitle,
+  onPress,
+  divider,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  iconColor: string
+  iconBg: string
+  title: string
+  subtitle: string
+  onPress: () => void
+  divider?: boolean
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: colors.surfaceMuted }}
+      style={({ pressed }) => [
+        styles.toolRow,
+        divider ? styles.toolRowBorder : null,
+        pressed ? { backgroundColor: colors.surfaceMuted } : null,
+      ]}
+    >
+      <View style={[styles.toolIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={20} color={iconColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.toolTitle}>{title}</Text>
+        <Text style={styles.toolSubtitle}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+    </Pressable>
   )
 }
 
@@ -114,6 +174,40 @@ const styles = StyleSheet.create({
   userMeta: {
     ...typography.caption,
     color: colors.textSubtle,
+  },
+  sectionLabel: {
+    ...typography.micro,
+    color: colors.textSubtle,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  toolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  toolRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  toolIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  toolSubtitle: {
+    ...typography.caption,
+    color: colors.textSubtle,
+    marginTop: 2,
   },
   signOut: {
     flexDirection: 'row',

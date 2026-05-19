@@ -21,13 +21,13 @@ import { useCustomers } from '@/hooks/useCustomers'
 import { usePolicies } from '@/hooks/usePolicies'
 import { CATEGORY_VISUAL, classifyPolicy } from '@/lib/classify'
 import { formatCurrency } from '@/lib/currency'
-import { relativeRenewal } from '@/lib/dates'
+import { formatDate, relativeRenewal } from '@/lib/dates'
 import {
   buildRenewals,
   type RenewalBucket,
   type RenewalEntry,
 } from '@/lib/insights'
-import { colors, radii, spacing, toneStyles, typography } from '@/theme'
+import { colors, radii, shadows, spacing, toneStyles, typography } from '@/theme'
 
 type FilterKey = 'all' | 'overdue' | 'today' | 'tomorrow' | 'this_week' | 'this_month' | 'later'
 
@@ -189,13 +189,29 @@ export default function RenewalsScreen() {
   )
 }
 
+// Bucket → tone for the calendar-tear + accent stripe colour
+const BUCKET_TONE: Record<RenewalBucket, 'danger' | 'warning' | 'info' | 'primary' | 'accent' | 'neutral'> = {
+  overdue: 'danger',
+  today: 'warning',
+  tomorrow: 'info',
+  this_week: 'primary',
+  this_month: 'accent',
+  later: 'neutral',
+}
+
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
 function RenewalCard({ entry }: { entry: RenewalEntry }) {
   const category = classifyPolicy(entry.policy)
   const visual = CATEGORY_VISUAL[category]
   const palette = toneStyles(visual.tone)
+  const bucketPalette = toneStyles(BUCKET_TONE[entry.bucket])
   const mobileDigits = (entry.customer?.mobile ?? '').replace(/\D/g, '')
   const hasMobile = mobileDigits.length >= 7
   const hasEmail = Boolean(entry.customer?.email)
+  const renewalDay = entry.renewalDate.getDate()
+  const renewalMonth = MONTHS[entry.renewalDate.getMonth()]
+  const relative = relativeRenewal(entry.renewalDate)
 
   const openCustomer = () => {
     if (entry.customer) router.push(`/customers/${entry.customer.id}`)
@@ -215,39 +231,73 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
 
   return (
     <View style={styles.card}>
-      {/* Top row: category badge + premium */}
-      <View style={styles.cardTopRow}>
-        <View style={[styles.categoryChip, { backgroundColor: palette.background }]}>
-          <Ionicons name={visual.icon} size={14} color={palette.foreground} />
-          <Text style={[styles.categoryChipText, { color: palette.foreground }]}>
-            {visual.label}
-          </Text>
+      {/* Accent stripe on left, color-coded to urgency */}
+      <View style={[styles.cardAccent, { backgroundColor: bucketPalette.foreground }]} />
+
+      <View style={styles.cardInner}>
+        {/* Top row: date tear + category/bucket badges + premium */}
+        <View style={styles.cardTopRow}>
+          <View style={[
+            styles.dateTear,
+            { backgroundColor: bucketPalette.background, borderColor: bucketPalette.foreground },
+          ]}>
+            <Text style={[styles.dateTearMonth, { color: bucketPalette.foreground }]}>{renewalMonth}</Text>
+            <Text style={[styles.dateTearDay, { color: bucketPalette.foreground }]}>{renewalDay}</Text>
+          </View>
+
+          <View style={styles.topMeta}>
+            <View style={[styles.categoryChip, { backgroundColor: palette.background }]}>
+              <Ionicons name={visual.icon} size={11} color={palette.foreground} />
+              <Text style={[styles.categoryChipText, { color: palette.foreground }]}>
+                {visual.label}
+              </Text>
+            </View>
+            <RenewalBadge bucket={entry.bucket} compact />
+          </View>
+
+          <View style={styles.premiumWrap}>
+            <Text style={styles.premiumLabel}>PREMIUM</Text>
+            <Text style={styles.amount}>{formatCurrency(entry.policy.premium_amount)}</Text>
+          </View>
         </View>
-        <Text style={styles.amount}>{formatCurrency(entry.policy.premium_amount)}</Text>
+
+        {/* Body: customer name + policy info + italic renewal date line */}
+        <Pressable
+          onPress={openCustomer}
+          android_ripple={{ color: colors.surfaceMuted }}
+          style={styles.bodyPress}
+        >
+          <Text style={styles.customerName} numberOfLines={1}>
+            {entry.customer?.full_name ?? 'Unknown customer'}
+          </Text>
+
+          <Text style={styles.policyLine} numberOfLines={1}>
+            <Text style={styles.policyNumber}>
+              {entry.policy.policy_number ?? 'No policy number'}
+            </Text>
+            {entry.policy.policy_name ? (
+              <Text style={styles.policyName}> · {entry.policy.policy_name}</Text>
+            ) : null}
+          </Text>
+
+          {/* Italic renewal date — the small italicised text the user asked for */}
+          <View style={styles.renewalLine}>
+            <Ionicons name="calendar-outline" size={11} color={colors.textSubtle} />
+            <Text style={styles.renewalDateText}>
+              Renews on {formatDate(entry.renewalDate)}
+            </Text>
+            <Text style={styles.renewalDot}>·</Text>
+            <Text style={[styles.renewalRelative, { color: bucketPalette.foreground }]}>
+              {relative}
+            </Text>
+            {entry.policy.status !== 'active' ? (
+              <View style={{ marginLeft: 'auto' }}>
+                <Badge label={entry.policy.status} tone="neutral" compact />
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
       </View>
-
-      {/* Body: customer + policy info */}
-      <Pressable onPress={openCustomer} android_ripple={{ color: colors.surfaceMuted }} style={styles.bodyPress}>
-        <Text style={styles.customerName} numberOfLines={1}>
-          {entry.customer?.full_name ?? 'Unknown customer'}
-        </Text>
-        <Text style={styles.policyLine} numberOfLines={1}>
-          <Text style={styles.policyNumber}>
-            {entry.policy.policy_number ?? 'No policy number'}
-          </Text>
-          {entry.policy.policy_name ? (
-            <Text style={styles.policyName}> · {entry.policy.policy_name}</Text>
-          ) : null}
-        </Text>
-
-        <View style={styles.dateRow}>
-          <RenewalBadge bucket={entry.bucket} compact />
-          <Text style={styles.relativeDate}>{relativeRenewal(entry.renewalDate)}</Text>
-          {entry.policy.status !== 'active' ? (
-            <Badge label={entry.policy.status} tone="neutral" compact />
-          ) : null}
-        </View>
-      </Pressable>
 
       {/* Action row: Call, WhatsApp, Email */}
       <View style={styles.actionRow}>
@@ -374,13 +424,59 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+    position: 'relative',
+    ...shadows.card,
+  },
+  cardAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  cardInner: {
+    paddingLeft: 4,
   },
   cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+  },
+  dateTear: {
+    width: 52,
+    height: 56,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  dateTearMonth: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  dateTearDay: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+    marginTop: 2,
+  },
+  topMeta: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  premiumWrap: {
+    alignItems: 'flex-end',
+  },
+  premiumLabel: {
+    ...typography.micro,
+    color: colors.textSubtle,
+    fontSize: 9,
+    letterSpacing: 0.6,
   },
   categoryChip: {
     flexDirection: 'row',
@@ -418,15 +514,28 @@ const styles = StyleSheet.create({
   policyName: {
     color: colors.textSubtle,
   },
-  dateRow: {
+  renewalLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 4,
     marginTop: 6,
   },
-  relativeDate: {
-    ...typography.captionBold,
-    color: colors.textMuted,
+  renewalDateText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textSubtle,
+    lineHeight: 16,
+  },
+  renewalDot: {
+    color: colors.textSubtle,
+    fontSize: 12,
+    marginHorizontal: 2,
+  },
+  renewalRelative: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    fontWeight: '600',
+    lineHeight: 16,
   },
   actionRow: {
     flexDirection: 'row',
