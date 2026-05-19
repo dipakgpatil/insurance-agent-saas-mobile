@@ -40,6 +40,7 @@ export type AgencyOnboardingRequest = {
   agency_name?: string | null
   business_name?: string | null
   agent_code?: string | null
+  referral_code?: string | null
   address_line1?: string | null
   address_line2?: string | null
   city?: string | null
@@ -54,6 +55,108 @@ export type AgencyOnboardingResponse = {
   plan_code: string
   subscription_status: string
   onboarding_completed: boolean
+  referral_benefit: ReferralBenefitRead | null
+}
+
+export type ReferralBenefitRead = {
+  referral_event_id: string
+  referrer_display_name: string
+  referrer_type: string
+  reward_for_referrer_points: number
+  reward_for_new_user_points: number
+  free_period_days: number
+  message: string
+}
+
+export type ReferralValidationResponse = {
+  is_valid: boolean
+  code: string | null
+  referrer_display_name: string | null
+  referrer_type: string | null
+  benefit_message: string | null
+  free_period_days: number
+}
+
+export type ReferralCodeRead = {
+  id: string
+  referrer_id: string
+  code: string
+  link_url: string | null
+  source: string | null
+  status: string
+  expires_at: string | null
+  max_uses: number | null
+  total_uses: number
+  successful_onboardings: number
+  created_at: string
+  updated_at: string
+}
+
+export type ReferralReferrerRead = {
+  id: string
+  referrer_type: string
+  user_id: string | null
+  display_name: string
+  phone: string | null
+  email: string | null
+  status: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type RewardBalanceRead = {
+  owner_type: string
+  owner_referrer_id: string | null
+  owner_user_id: string | null
+  total_earned_points: number
+  total_redeemed_points: number
+  available_points: number
+}
+
+export type RewardLedgerRead = {
+  id: string
+  owner_type: string
+  owner_referrer_id: string | null
+  owner_user_id: string | null
+  referral_event_id: string | null
+  points: number
+  rupee_value: string
+  transaction_type: string
+  description: string | null
+  status: string
+  created_at: string
+}
+
+export type ReferralEventRead = {
+  id: string
+  referral_code_id: string
+  referrer_id: string
+  referred_user_id: string | null
+  referred_name: string | null
+  referred_phone: string | null
+  referred_email: string | null
+  status: string
+  onboarded_at: string | null
+  created_at: string
+  updated_at: string
+  metadata: Record<string, unknown>
+}
+
+export type MyReferralResponse = {
+  referrer: ReferralReferrerRead
+  code: ReferralCodeRead
+  reward_balance: RewardBalanceRead
+  referral_link: string
+}
+
+export type MyReferralEventsResponse = {
+  items: ReferralEventRead[]
+}
+
+export type MyRewardsResponse = {
+  balance: RewardBalanceRead
+  ledger: RewardLedgerRead[]
 }
 
 export type ImportMappingSuggestion = {

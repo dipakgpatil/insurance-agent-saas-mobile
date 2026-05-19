@@ -17,6 +17,7 @@ import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { useAuth } from '@/context/useAuth'
+import { clearStoredReferralCode, getStoredReferralCode, normalizeReferralCode, storeReferralCode } from '@/lib/referral'
 import { colors, radii, spacing, typography } from '@/theme'
 
 export default function AgencyOnboardingScreen() {
@@ -29,6 +30,7 @@ export default function AgencyOnboardingScreen() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [pincode, setPincode] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [workspaceCreated, setWorkspaceCreated] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -41,6 +43,16 @@ export default function AgencyOnboardingScreen() {
     if (!initializing && !user) router.replace('/login')
     if (user?.tenant_id && !workspaceCreated) router.replace('/(tabs)')
   }, [initializing, user, workspaceCreated])
+
+  useEffect(() => {
+    let cancelled = false
+    getStoredReferralCode().then((code) => {
+      if (!cancelled) setReferralCode(normalizeReferralCode(code))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (user?.name && !userName) setUserName(user.name)
@@ -66,11 +78,13 @@ export default function AgencyOnboardingScreen() {
         agency_name: agencyName.trim(),
         business_name: businessName.trim() || agencyName.trim(),
         agent_code: agentCode.trim() || null,
+        referral_code: referralCode.trim() || null,
         city: city.trim() || null,
         state: state.trim() || null,
         pincode: pincode.trim() || null,
         country: 'India',
       })
+      await clearStoredReferralCode()
       setWorkspaceCreated(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete onboarding')
@@ -175,6 +189,17 @@ export default function AgencyOnboardingScreen() {
               value={agentCode}
               onChangeText={(value) => setAgentCode(value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
               placeholder="Optional, e.g. PATILINS"
+              autoCapitalize="characters"
+            />
+            <Field
+              label="Referral code"
+              value={referralCode}
+              onChangeText={(value) => {
+                const normalized = normalizeReferralCode(value)
+                setReferralCode(normalized)
+                if (normalized.length >= 4) void storeReferralCode(normalized)
+              }}
+              placeholder="Optional"
               autoCapitalize="characters"
             />
           </Card>

@@ -1,16 +1,18 @@
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { useCallback } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { useGoogleAuthFlow } from '@/hooks/useGoogleAuthFlow'
 import type { GoogleAuthResponse } from '@/api/types'
-import { colors, spacing, typography } from '@/theme'
+import { normalizeReferralCode, storeReferralCode } from '@/lib/referral'
+import { colors, radii, spacing, typography } from '@/theme'
 
 export default function SignupScreen() {
+  const [referralCode, setReferralCode] = useState('')
   const handleGoogleAuthenticated = useCallback((response: GoogleAuthResponse) => {
     if (response.onboarding_required || response.user.tenant_id === null) {
       router.replace('/onboarding/agency')
@@ -25,7 +27,14 @@ export default function SignupScreen() {
   })
 
   const handleSignup = async () => {
+    if (referralCode.trim().length >= 4) {
+      await storeReferralCode(referralCode)
+    }
     await google.start()
+  }
+
+  const updateReferral = (value: string) => {
+    setReferralCode(normalizeReferralCode(value))
   }
 
   return (
@@ -47,6 +56,19 @@ export default function SignupScreen() {
         {google.error ? <ErrorBanner message={google.error} /> : null}
 
         <Card style={styles.card}>
+          <Text style={styles.inputLabel}>Referral code</Text>
+          <TextInput
+            value={referralCode}
+            onChangeText={updateReferral}
+            placeholder="ANIL123 or USER12345"
+            placeholderTextColor={colors.textSubtle}
+            autoCapitalize="characters"
+            style={styles.input}
+          />
+          <Text style={styles.inputHelp}>
+            Add a code from a promoter or another PolicyPulse user to claim extra free time.
+          </Text>
+
           <View style={styles.stepRow}>
             <Ionicons name="logo-google" size={18} color={colors.primary} />
             <Text style={styles.stepText}>Sign up securely with Google</Text>
@@ -120,6 +142,24 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: spacing.md,
+  },
+  inputLabel: {
+    ...typography.captionBold,
+    color: colors.textMuted,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  inputHelp: {
+    ...typography.caption,
+    color: colors.textSubtle,
   },
   stepRow: {
     flexDirection: 'row',

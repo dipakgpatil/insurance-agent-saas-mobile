@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Avatar } from '@/components/Avatar'
@@ -14,6 +14,8 @@ import { ScreenContainer } from '@/components/ScreenContainer'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Skeleton } from '@/components/Skeleton'
 import { useAuth } from '@/context/useAuth'
+import { getReferralBenefit } from '@/api/referrals'
+import type { ReferralBenefitRead } from '@/api/types'
 import { useCustomers } from '@/hooks/useCustomers'
 import { usePolicies } from '@/hooks/usePolicies'
 import { compactCurrency, toNumber } from '@/lib/currency'
@@ -26,12 +28,28 @@ import {
 import { colors, radii, spacing, typography } from '@/theme'
 
 export default function DashboardScreen() {
-  const { user } = useAuth()
+  const { user, accessToken } = useAuth()
   const { customers, loading: customersLoading, error: customersError, refresh: refreshCustomers } =
     useCustomers()
   const { policies, loading: policiesLoading, error: policiesError, refresh: refreshPolicies } =
     usePolicies()
   const [refreshing, setRefreshing] = useState(false)
+  const [referralBenefit, setReferralBenefit] = useState<ReferralBenefitRead | null>(null)
+
+  useEffect(() => {
+    if (!accessToken) return
+    let cancelled = false
+    getReferralBenefit(accessToken)
+      .then((benefit) => {
+        if (!cancelled) setReferralBenefit(benefit)
+      })
+      .catch(() => {
+        if (!cancelled) setReferralBenefit(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [accessToken])
 
   const data = useMemo(() => {
     const renewals = buildRenewals(policies, customers)
@@ -80,6 +98,12 @@ export default function DashboardScreen() {
         </View>
 
         {error ? <ErrorBanner message={error} /> : null}
+        {referralBenefit ? (
+          <Card style={styles.referralBenefitCard}>
+            <Ionicons name="gift" size={18} color={colors.success} />
+            <Text style={styles.referralBenefitText}>{referralBenefit.message}</Text>
+          </Card>
+        ) : null}
 
         <View style={styles.kpiGrid}>
           {loading ? (
@@ -355,6 +379,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
+  },
+  referralBenefitCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.successLight,
+    borderColor: '#bbf7d0',
+  },
+  referralBenefitText: {
+    ...typography.captionBold,
+    color: colors.success,
+    flex: 1,
   },
   kpiCell: {
     flexBasis: '48%',

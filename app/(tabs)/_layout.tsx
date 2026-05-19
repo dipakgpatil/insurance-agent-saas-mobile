@@ -72,6 +72,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="referrals"
+        options={{
+          title: 'Refer',
+          tabBarIcon: ({ color, size }) => <Ionicons name="gift" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
