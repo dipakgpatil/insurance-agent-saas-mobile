@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import * as Linking from 'expo-linking'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   FlatList,
@@ -16,17 +17,30 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Avatar } from '@/components/Avatar'
-import { BirthdayBadge } from '@/components/BirthdayBadge'
 import { Button } from '@/components/Button'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Skeleton } from '@/components/Skeleton'
 import { useCustomers } from '@/hooks/useCustomers'
 import { formatDate } from '@/lib/dates'
-import { type BirthdayEntry, buildBirthdays } from '@/lib/insights'
+import { type BirthdayBucket, type BirthdayEntry, buildBirthdays } from '@/lib/insights'
 import { sendWish } from '@/lib/whatsapp'
 import { BIRTHDAY_WISHES, buildWishMessage, type WishTemplate } from '@/lib/wishes'
-import { colors, radii, shadows, spacing, typography } from '@/theme'
+import { colors, radii, shadows, spacing, toneStyles, typography, type Tone } from '@/theme'
+
+const BUCKET_TONE: Record<BirthdayBucket, Tone> = {
+  today: 'warning',
+  tomorrow: 'info',
+  this_week: 'primary',
+  later: 'accent',
+}
+
+const BUCKET_LABEL: Record<BirthdayBucket, string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  this_week: 'This week',
+  later: 'Later',
+}
 
 export default function BirthdaysScreen() {
   const { customers, loading, error, refresh } = useCustomers()
@@ -130,29 +144,15 @@ export default function BirthdaysScreen() {
             />
           }
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
+            <BirthdayCard
+              entry={item}
+              onTapWish={() => {
                 Haptics.selectionAsync().catch(() => {})
                 setTarget(item)
               }}
-              android_ripple={{ color: colors.surfaceMuted }}
-              style={({ pressed }) => [styles.row, pressed ? { opacity: 0.96 } : null]}
-            >
-              <Avatar name={item.customer.full_name} size={44} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle} numberOfLines={1}>
-                  {item.customer.full_name}
-                </Text>
-                <Text style={styles.rowSub} numberOfLines={1}>
-                  {formatDate(item.nextBirthday)}
-                  {item.age ? ` · turns ${item.age}` : ''}
-                  {item.customer.mobile ? ` · ${item.customer.mobile}` : ''}
-                </Text>
-              </View>
-              <BirthdayBadge bucket={item.bucket} compact />
-            </Pressable>
+            />
           )}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         />
       )}
 
@@ -166,6 +166,124 @@ export default function BirthdaysScreen() {
         }}
       />
     </SafeAreaView>
+  )
+}
+
+function BirthdayCard({
+  entry,
+  onTapWish,
+}: {
+  entry: BirthdayEntry
+  onTapWish: () => void
+}) {
+  const palette = toneStyles(BUCKET_TONE[entry.bucket])
+  const mobileDigits = (entry.customer.mobile ?? '').replace(/\D/g, '')
+  const hasMobile = mobileDigits.length >= 7
+  const day = entry.nextBirthday.getDate()
+  const month = entry.nextBirthday.toLocaleString('en-IN', { month: 'short' }).toUpperCase()
+
+  const ageLine = entry.age
+    ? entry.daysUntil === 0
+      ? `Turns ${entry.age} today`
+      : entry.daysUntil === 1
+        ? `Turns ${entry.age} tomorrow`
+        : `Turns ${entry.age}`
+    : entry.daysUntil === 0
+      ? 'Birthday today'
+      : entry.daysUntil === 1
+        ? 'Birthday tomorrow'
+        : 'Birthday'
+
+  const relative =
+    entry.daysUntil === 0
+      ? 'Today'
+      : entry.daysUntil === 1
+        ? 'Tomorrow'
+        : `In ${entry.daysUntil} days`
+
+  const onCall = () => {
+    if (hasMobile) Linking.openURL(`tel:${mobileDigits}`).catch(() => {})
+  }
+  const onWhatsApp = () => {
+    if (!hasMobile) return
+    const normalized = mobileDigits.length === 10 ? `91${mobileDigits}` : mobileDigits
+    Linking.openURL(`https://wa.me/${normalized}`).catch(() => {})
+  }
+
+  return (
+    <View style={[styles.card, { borderColor: palette.background }]}>
+      <View style={[styles.cardBanner, { backgroundColor: palette.background }]}>
+        <View style={styles.bannerTear}>
+          <Text style={[styles.bannerMonth, { color: palette.foreground }]}>{month}</Text>
+          <Text style={[styles.bannerDay, { color: palette.foreground }]}>{day}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.bannerRelative, { color: palette.foreground }]}>{relative}</Text>
+          <View style={styles.bannerIcons}>
+            <Ionicons name="gift" size={14} color={palette.foreground} />
+            <Ionicons name="balloon" size={14} color={palette.foreground} />
+            <Ionicons name="sparkles" size={14} color={palette.foreground} />
+          </View>
+        </View>
+        <View style={[styles.bucketPill, { borderColor: palette.foreground }]}>
+          <Text style={[styles.bucketPillText, { color: palette.foreground }]}>
+            {BUCKET_LABEL[entry.bucket]}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Avatar name={entry.customer.full_name} size={44} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardName} numberOfLines={1}>
+            {entry.customer.full_name}
+          </Text>
+          <Text style={styles.cardAgeLine} numberOfLines={1}>
+            {ageLine}
+          </Text>
+          <Text style={styles.cardMeta} numberOfLines={1}>
+            {formatDate(entry.nextBirthday)}
+            {entry.customer.mobile ? ` · ${entry.customer.mobile}` : ' · no mobile'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.actionRow}>
+        <ActionBtn icon="call" label="Call" onPress={onCall} disabled={!hasMobile} />
+        <View style={styles.actionDivider} />
+        <ActionBtn icon="logo-whatsapp" label="WhatsApp" onPress={onWhatsApp} disabled={!hasMobile} />
+        <View style={styles.actionDivider} />
+        <ActionBtn icon="chatbubble-ellipses" label="Wish" onPress={onTapWish} />
+      </View>
+    </View>
+  )
+}
+
+function ActionBtn({
+  icon,
+  label,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  onPress: () => void
+  disabled?: boolean
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      android_ripple={{ color: colors.surfaceMuted, borderless: false }}
+      style={({ pressed }) => [
+        styles.actionBtn,
+        pressed && !disabled ? { backgroundColor: colors.surfaceMuted } : null,
+        disabled ? { opacity: 0.4 } : null,
+      ]}
+    >
+      <Ionicons name={icon} size={16} color={colors.primaryDark} />
+      <Text style={styles.actionLabel}>{label}</Text>
+    </Pressable>
   )
 }
 
@@ -381,25 +499,109 @@ const styles = StyleSheet.create({
   skeletonRow: {
     marginBottom: spacing.sm,
   },
-  row: {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  cardBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  bannerTear: {
+    width: 48,
+    height: 52,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerMonth: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  bannerDay: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 26,
+    marginTop: 2,
+  },
+  bannerRelative: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+  },
+  bannerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  bucketPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  bucketPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  cardBody: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  rowTitle: {
-    ...typography.bodyBold,
+  cardName: {
+    ...typography.heading,
     color: colors.text,
   },
-  rowSub: {
+  cardAgeLine: {
+    ...typography.bodyBold,
+    color: colors.text,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  cardMeta: {
     ...typography.caption,
     color: colors.textSubtle,
     marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  actionLabel: {
+    ...typography.captionBold,
+    color: colors.primaryDark,
+  },
+  actionDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+    alignSelf: 'stretch',
   },
   modalBackdrop: {
     flex: 1,

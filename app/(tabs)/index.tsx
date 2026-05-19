@@ -8,7 +8,6 @@ import { Badge } from '@/components/Badge'
 import { Card } from '@/components/Card'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
-import { KpiCard } from '@/components/KpiCard'
 import { ScreenContainer } from '@/components/ScreenContainer'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Skeleton } from '@/components/Skeleton'
@@ -19,12 +18,7 @@ import { useCustomers } from '@/hooks/useCustomers'
 import { usePolicies } from '@/hooks/usePolicies'
 import { compactCurrency, toNumber } from '@/lib/currency'
 import { formatDateShort, relativeRenewal } from '@/lib/dates'
-import {
-  buildBirthdays,
-  buildRenewals,
-  renewalsByBucket,
-  type RenewalBucket,
-} from '@/lib/insights'
+import { buildBirthdays, buildRenewals, type RenewalBucket } from '@/lib/insights'
 import { colors, radii, spacing, toneStyles, typography } from '@/theme'
 
 const BUCKET_TONE: Record<RenewalBucket, 'danger' | 'warning' | 'info' | 'primary' | 'accent' | 'neutral'> = {
@@ -65,16 +59,9 @@ export default function DashboardScreen() {
   const data = useMemo(() => {
     const renewals = buildRenewals(policies, customers)
     const birthdays = buildBirthdays(customers, 30)
-    const buckets = renewalsByBucket(renewals)
     return {
-      buckets,
       birthdays,
-      upcoming: renewals
-        .filter((entry) => entry.daysUntil >= 0 && entry.daysUntil <= 60)
-        .slice(0, 5),
-      activePolicies: policies.filter((policy) => policy.status === 'active').length,
-      totalPremium: policies.reduce((sum, policy) => sum + toNumber(policy.premium_amount), 0),
-      customerCount: customers.length,
+      upcoming: renewals.filter((entry) => entry.daysUntil >= 0 && entry.daysUntil <= 60).slice(0, 8),
     }
   }, [customers, policies])
 
@@ -127,102 +114,6 @@ export default function DashboardScreen() {
           </Card>
         ) : null}
 
-        <View style={styles.kpiGrid}>
-          {loading ? (
-            <>
-              <View style={styles.kpiCell}>
-                <Skeleton height={84} radius={radii.lg} />
-              </View>
-              <View style={styles.kpiCell}>
-                <Skeleton height={84} radius={radii.lg} />
-              </View>
-              <View style={styles.kpiCell}>
-                <Skeleton height={84} radius={radii.lg} />
-              </View>
-              <View style={styles.kpiCell}>
-                <Skeleton height={84} radius={radii.lg} />
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.kpiCell}>
-                <KpiCard
-                  icon="people"
-                  tone="primary"
-                  label="Customers"
-                  value={data.customerCount.toLocaleString('en-IN')}
-                  hint="Across your agency"
-                />
-              </View>
-              <View style={styles.kpiCell}>
-                <KpiCard
-                  icon="shield-checkmark"
-                  tone="success"
-                  label="Active policies"
-                  value={data.activePolicies.toLocaleString('en-IN')}
-                  hint={`${policies.length} total`}
-                />
-              </View>
-              <View style={styles.kpiCell}>
-                <KpiCard
-                  icon="calendar"
-                  tone="warning"
-                  label="This month"
-                  value={(
-                    data.buckets.today.length +
-                    data.buckets.tomorrow.length +
-                    data.buckets.this_week.length +
-                    data.buckets.this_month.length
-                  ).toLocaleString('en-IN')}
-                  hint={`${data.buckets.overdue.length} overdue`}
-                />
-              </View>
-              <View style={styles.kpiCell}>
-                <KpiCard
-                  icon="cash"
-                  tone="info"
-                  label="Premium AUM"
-                  value={compactCurrency(data.totalPremium)}
-                  hint="Across the book"
-                />
-              </View>
-            </>
-          )}
-        </View>
-
-        <Card>
-          <View style={styles.bucketRow}>
-            <BucketPill
-              icon="alert-circle"
-              label="Overdue"
-              count={data.buckets.overdue.length}
-              tone="danger"
-              onPress={() => router.push('/(tabs)/renewals?filter=overdue')}
-            />
-            <BucketPill
-              icon="today"
-              label="Today"
-              count={data.buckets.today.length}
-              tone="warning"
-              onPress={() => router.push('/(tabs)/renewals?filter=today')}
-            />
-            <BucketPill
-              icon="time"
-              label="Tomorrow"
-              count={data.buckets.tomorrow.length}
-              tone="info"
-              onPress={() => router.push('/(tabs)/renewals?filter=tomorrow')}
-            />
-            <BucketPill
-              icon="calendar-clear"
-              label="Next 7"
-              count={data.buckets.this_week.length}
-              tone="primary"
-              onPress={() => router.push('/(tabs)/renewals?filter=this_week')}
-            />
-          </View>
-        </Card>
-
         <View>
           <SectionHeader
             title="Upcoming renewals"
@@ -240,9 +131,9 @@ export default function DashboardScreen() {
           <Card style={{ padding: 0 }}>
             {loading ? (
               <View style={styles.skeletonStack}>
-                <Skeleton height={56} radius={0} />
-                <Skeleton height={56} radius={0} />
-                <Skeleton height={56} radius={0} />
+                <Skeleton height={64} radius={0} />
+                <Skeleton height={64} radius={0} />
+                <Skeleton height={64} radius={0} />
               </View>
             ) : data.upcoming.length === 0 ? (
               <EmptyState
@@ -290,11 +181,11 @@ export default function DashboardScreen() {
                       <Text style={styles.rowSub} numberOfLines={1}>
                         {entry.policy.policy_number ?? 'No policy number'}
                       </Text>
-                      <Text
-                        style={[styles.dashRenewalLine, { color: bucketPalette.foreground }]}
-                        numberOfLines={1}
-                      >
-                        Renews {formatDateShort(entry.renewalDate)} · {relativeRenewal(entry.renewalDate)}
+                      <Text style={styles.dashRenewalLine} numberOfLines={1}>
+                        Renews {formatDateShort(entry.renewalDate)} ·{' '}
+                        <Text style={{ color: bucketPalette.foreground, fontWeight: '600' }}>
+                          {relativeRenewal(entry.renewalDate)}
+                        </Text>
                       </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -371,41 +262,6 @@ export default function DashboardScreen() {
   )
 }
 
-function BucketPill({
-  icon,
-  label,
-  count,
-  tone,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap
-  label: string
-  count: number
-  tone: 'danger' | 'warning' | 'info' | 'primary'
-  onPress: () => void
-}) {
-  const palette = {
-    danger: { bg: colors.dangerLight, fg: colors.danger },
-    warning: { bg: colors.warningLight, fg: colors.warning },
-    info: { bg: colors.infoLight, fg: colors.info },
-    primary: { bg: colors.primaryLight, fg: colors.primaryDark },
-  }[tone]
-  return (
-    <Pressable
-      onPress={onPress}
-      android_ripple={{ color: colors.surfaceMuted }}
-      style={({ pressed }) => [
-        styles.bucketPill,
-        { backgroundColor: palette.bg, opacity: pressed ? 0.85 : 1 },
-      ]}
-    >
-      <Ionicons name={icon} size={16} color={palette.fg} />
-      <Text style={[styles.bucketPillCount, { color: palette.fg }]}>{count}</Text>
-      <Text style={[styles.bucketPillLabel, { color: palette.fg }]}>{label}</Text>
-    </Pressable>
-  )
-}
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -432,11 +288,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textMuted,
   },
-  kpiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
   referralBenefitCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -448,33 +299,6 @@ const styles = StyleSheet.create({
     ...typography.captionBold,
     color: colors.success,
     flex: 1,
-  },
-  kpiCell: {
-    flexBasis: '48%',
-    flexGrow: 1,
-  },
-  bucketRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  bucketPill: {
-    flex: 1,
-    minWidth: 70,
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.md,
-    gap: 2,
-  },
-  bucketPillCount: {
-    ...typography.title,
-    fontSize: 18,
-  },
-  bucketPillLabel: {
-    ...typography.caption,
-    fontWeight: '600',
   },
   listRow: {
     flexDirection: 'row',
@@ -518,7 +342,7 @@ const styles = StyleSheet.create({
   dashRenewalLine: {
     fontSize: 11,
     fontStyle: 'italic',
-    fontWeight: '600',
+    color: colors.textSubtle,
     marginTop: 2,
   },
   dashPremiumLabel: {

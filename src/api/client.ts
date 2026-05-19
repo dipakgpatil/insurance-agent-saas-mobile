@@ -16,6 +16,17 @@ export type RequestOptions = RequestInit & {
   token?: string | null
 }
 
+let sessionExpiredHandler: (() => void) | null = null
+
+/**
+ * Register a callback fired when any apiRequest sees a 401. AuthProvider
+ * uses it to clear the stored session so the user is redirected to /login
+ * instead of being stuck on a blank screen with silent fetch errors.
+ */
+export function setSessionExpiredHandler(handler: (() => void) | null) {
+  sessionExpiredHandler = handler
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers as HeadersInit | undefined)
   if (options.token) headers.set('Authorization', `Bearer ${options.token}`)
@@ -27,6 +38,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
 
   if (!response.ok) {
+    if (response.status === 401 && options.token && sessionExpiredHandler) {
+      sessionExpiredHandler()
+    }
     throw new ApiError(await readErrorMessage(response), response.status)
   }
   if (response.status === 204) return undefined as T

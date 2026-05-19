@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { fetchMe, login as loginApi, loginWithGoogle as loginWithGoogleApi, logout as logoutApi } from '@/api/auth'
-import { ApiError } from '@/api/client'
+import { ApiError, setSessionExpiredHandler } from '@/api/client'
 import { completeAgencyOnboarding as completeAgencyOnboardingApi } from '@/api/onboarding'
 import type { AgencyOnboardingRequest } from '@/api/types'
 import { AuthContext, type AuthContextValue, type StoredSession } from './auth-context'
@@ -60,6 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Any apiRequest that hits 401 will fire this — clear the session so the
+  // (tabs)/_layout Redirect sends the user back to /login instead of a
+  // half-empty screen with silent fetch errors.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setSession(null)
+      void writeStored(null)
+    })
+    return () => setSessionExpiredHandler(null)
   }, [])
 
   const login = useCallback(async (emailOrMobile: string, password: string) => {

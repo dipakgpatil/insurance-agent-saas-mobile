@@ -22,7 +22,7 @@ export const CATEGORY_VISUAL: Record<
 > = {
   car: { icon: 'car-sport', tone: 'primary', label: 'Car' },
   bike: { icon: 'bicycle', tone: 'accent', label: 'Bike' },
-  health: { icon: 'heart', tone: 'danger', label: 'Health' },
+  health: { icon: 'medkit', tone: 'info', label: 'Health' },
   life: { icon: 'leaf', tone: 'success', label: 'Life' },
   other: { icon: 'shield-checkmark', tone: 'info', label: 'Other' },
 }

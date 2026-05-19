@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Badge } from '@/components/Badge'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
-import { RenewalBadge } from '@/components/RenewalBadge'
 import { Skeleton } from '@/components/Skeleton'
 import { useCustomers } from '@/hooks/useCustomers'
 import { usePolicies } from '@/hooks/usePolicies'
@@ -231,11 +230,8 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
 
   return (
     <View style={styles.card}>
-      {/* Accent stripe on left, color-coded to urgency */}
-      <View style={[styles.cardAccent, { backgroundColor: bucketPalette.foreground }]} />
-
       <View style={styles.cardInner}>
-        {/* Top row: date tear + category/bucket badges + premium */}
+        {/* Top row: date tear + body + premium */}
         <View style={styles.cardTopRow}>
           <View style={[
             styles.dateTear,
@@ -245,15 +241,29 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
             <Text style={[styles.dateTearDay, { color: bucketPalette.foreground }]}>{renewalDay}</Text>
           </View>
 
-          <View style={styles.topMeta}>
-            <View style={[styles.categoryChip, { backgroundColor: palette.background }]}>
-              <Ionicons name={visual.icon} size={11} color={palette.foreground} />
-              <Text style={[styles.categoryChipText, { color: palette.foreground }]}>
-                {visual.label}
+          <Pressable
+            onPress={openCustomer}
+            android_ripple={{ color: colors.surfaceMuted }}
+            style={styles.bodyPress}
+          >
+            <Text style={styles.customerName} numberOfLines={1}>
+              {entry.customer?.full_name ?? 'Unknown customer'}
+            </Text>
+            <Text style={styles.policyLine} numberOfLines={1}>
+              <Text style={styles.policyNumber}>
+                {entry.policy.policy_number ?? 'No policy number'}
               </Text>
-            </View>
-            <RenewalBadge bucket={entry.bucket} compact />
-          </View>
+              {entry.policy.policy_name ? (
+                <Text style={styles.policyName}> · {entry.policy.policy_name}</Text>
+              ) : null}
+            </Text>
+            <Text style={styles.renewalLineText} numberOfLines={1}>
+              Renews on {formatDate(entry.renewalDate)} ·{' '}
+              <Text style={[styles.renewalRelative, { color: bucketPalette.foreground }]}>
+                {relative}
+              </Text>
+            </Text>
+          </Pressable>
 
           <View style={styles.premiumWrap}>
             <Text style={styles.premiumLabel}>PREMIUM</Text>
@@ -261,42 +271,28 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
           </View>
         </View>
 
-        {/* Body: customer name + policy info + italic renewal date line */}
-        <Pressable
-          onPress={openCustomer}
-          android_ripple={{ color: colors.surfaceMuted }}
-          style={styles.bodyPress}
-        >
-          <Text style={styles.customerName} numberOfLines={1}>
-            {entry.customer?.full_name ?? 'Unknown customer'}
-          </Text>
-
-          <Text style={styles.policyLine} numberOfLines={1}>
-            <Text style={styles.policyNumber}>
-              {entry.policy.policy_number ?? 'No policy number'}
+        {/* Info strip: category | status — mirrors the action-row pattern at the bottom */}
+        <View style={styles.infoStrip}>
+          <View style={styles.infoCell}>
+            <Ionicons name={visual.icon} size={13} color={palette.foreground} />
+            <Text style={[styles.infoCellText, { color: palette.foreground }]}>{visual.label}</Text>
+          </View>
+          <View style={styles.infoDivider} />
+          <View style={styles.infoCell}>
+            <View style={[styles.bucketDot, { backgroundColor: bucketPalette.foreground }]} />
+            <Text style={[styles.infoCellText, { color: bucketPalette.foreground }]}>
+              {BUCKET_LABEL[entry.bucket]}
             </Text>
-            {entry.policy.policy_name ? (
-              <Text style={styles.policyName}> · {entry.policy.policy_name}</Text>
-            ) : null}
-          </Text>
-
-          {/* Italic renewal date — the small italicised text the user asked for */}
-          <View style={styles.renewalLine}>
-            <Ionicons name="calendar-outline" size={11} color={colors.textSubtle} />
-            <Text style={styles.renewalDateText}>
-              Renews on {formatDate(entry.renewalDate)}
-            </Text>
-            <Text style={styles.renewalDot}>·</Text>
-            <Text style={[styles.renewalRelative, { color: bucketPalette.foreground }]}>
-              {relative}
-            </Text>
-            {entry.policy.status !== 'active' ? (
-              <View style={{ marginLeft: 'auto' }}>
+          </View>
+          {entry.policy.status !== 'active' ? (
+            <>
+              <View style={styles.infoDivider} />
+              <View style={styles.infoCell}>
                 <Badge label={entry.policy.status} tone="neutral" compact />
               </View>
-            ) : null}
-          </View>
-        </Pressable>
+            </>
+          ) : null}
+        </View>
       </View>
 
       {/* Action row: Call, WhatsApp, Email */}
@@ -309,6 +305,15 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
       </View>
     </View>
   )
+}
+
+const BUCKET_LABEL: Record<RenewalBucket, string> = {
+  overdue: 'Overdue',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  this_week: 'This week',
+  this_month: 'This month',
+  later: 'Later',
 }
 
 function ActionBtn({
@@ -424,29 +429,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-    position: 'relative',
     ...shadows.card,
   },
-  cardAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-  },
   cardInner: {
-    paddingLeft: 4,
+    paddingBottom: spacing.sm,
   },
   cardTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    alignItems: 'flex-start',
+    gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
   },
   dateTear: {
     width: 52,
-    height: 56,
+    height: 60,
     borderRadius: radii.md,
     borderWidth: 1,
     alignItems: 'center',
@@ -464,11 +461,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     marginTop: 2,
   },
-  topMeta: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: 4,
-  },
   premiumWrap: {
     alignItems: 'flex-end',
   },
@@ -478,26 +470,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 0.6,
   },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-  },
-  categoryChipText: {
-    ...typography.captionBold,
-  },
   amount: {
     ...typography.bodyBold,
     color: colors.text,
     fontSize: 16,
   },
   bodyPress: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    flex: 1,
     gap: 4,
   },
   customerName: {
@@ -514,28 +493,49 @@ const styles = StyleSheet.create({
   policyName: {
     color: colors.textSubtle,
   },
-  renewalLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  renewalDateText: {
+  renewalLineText: {
     fontSize: 12,
     fontStyle: 'italic',
     color: colors.textSubtle,
     lineHeight: 16,
-  },
-  renewalDot: {
-    color: colors.textSubtle,
-    fontSize: 12,
-    marginHorizontal: 2,
+    marginTop: 4,
   },
   renewalRelative: {
-    fontSize: 12,
-    fontStyle: 'italic',
     fontWeight: '600',
-    lineHeight: 16,
+    fontStyle: 'italic',
+  },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  infoCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+  },
+  infoCellText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  bucketDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+  infoDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: colors.border,
   },
   actionRow: {
     flexDirection: 'row',
