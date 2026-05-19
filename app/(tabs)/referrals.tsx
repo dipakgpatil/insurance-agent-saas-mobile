@@ -80,8 +80,11 @@ export default function ReferralsScreen() {
   const whatsappUrl = useMemo(() => {
     const link = referral?.referral_link
     if (!link) return null
-    return `https://wa.me/?text=${encodeURIComponent(`Join PolicyPulse with my referral link and get extra free time: ${link}`)}`
-  }, [referral?.referral_link])
+    const message =
+      referral?.share_message ||
+      `I use PolicyPulse to manage insurance renewals. Join with my referral link and get extra free time: ${link}`
+    return `https://wa.me/?text=${encodeURIComponent(message)}`
+  }, [referral?.referral_link, referral?.share_message])
 
   const handleGenerate = async () => {
     if (!accessToken) return
@@ -146,24 +149,51 @@ export default function ReferralsScreen() {
         </View>
 
         <Card style={styles.linkCard}>
-          <View style={styles.linkIcon}>
-            <Ionicons name="share-social" size={22} color={colors.primaryDark} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sectionTitle}>Your referral link</Text>
-            <Text style={styles.helper}>
-              New agencies get extra free time. You get reward points after they complete onboarding.
-            </Text>
+          <View style={styles.linkHeader}>
+            <View style={styles.linkIcon}>
+              <Ionicons name="share-social" size={22} color={colors.primaryDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Your referral link</Text>
+              <Text style={styles.helper}>
+                {referral?.benefit_message ||
+                  'Share PolicyPulse with another insurance agency and track rewards here.'}
+              </Text>
+            </View>
           </View>
 
           {referral ? (
             <View style={styles.linkBox}>
-              <Text style={styles.codeLabel}>Code</Text>
-              <Text style={styles.codeText}>{referral.code.code}</Text>
-              <Text style={styles.linkText} numberOfLines={2}>{referral.referral_link}</Text>
+              <View style={styles.benefitGrid}>
+                <View style={styles.benefitPill}>
+                  <Ionicons name="trophy" size={16} color={colors.warning} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.benefitLabel}>You earn</Text>
+                    <Text style={styles.benefitValue}>{referral.referrer_reward_points} points</Text>
+                  </View>
+                </View>
+                <View style={styles.benefitPill}>
+                  <Ionicons name="calendar" size={16} color={colors.success} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.benefitLabel}>They get</Text>
+                    <Text style={styles.benefitValue}>{formatFreePeriod(referral.new_user_free_period_days)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.codeBox}>
+                <View>
+                  <Text style={styles.codeLabel}>Referral code</Text>
+                  <Text style={styles.codeText}>{referral.code.code}</Text>
+                </View>
+                <Ionicons name="qr-code-outline" size={22} color={colors.textSubtle} />
+              </View>
+              <Text style={styles.linkText} numberOfLines={2}>
+                {referral.referral_link}
+              </Text>
               <View style={styles.actionRow}>
                 <Button label="Copy" onPress={copyLink} variant="secondary" compact icon="copy-outline" />
-                <Button label="WhatsApp" onPress={shareWhatsApp} compact icon="logo-whatsapp" />
+                <Button label="Share on WhatsApp" onPress={shareWhatsApp} compact icon="logo-whatsapp" style={styles.whatsappButton} />
               </View>
             </View>
           ) : (
@@ -220,6 +250,15 @@ function formatMaybe(value?: string | null) {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short' }).format(new Date(value))
 }
 
+function formatFreePeriod(days: number) {
+  if (!days) return 'No free-period bonus'
+  if (days % 30 === 0) {
+    const months = days / 30
+    return `${months} month${months === 1 ? '' : 's'} free`
+  }
+  return `${days} days free`
+}
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -243,6 +282,11 @@ const styles = StyleSheet.create({
   },
   linkCard: {
     gap: spacing.md,
+  },
+  linkHeader: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'flex-start',
   },
   linkIcon: {
     width: 44,
@@ -269,6 +313,40 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.surfaceMuted,
   },
+  benefitGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  benefitPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+  },
+  benefitLabel: {
+    ...typography.micro,
+    color: colors.textSubtle,
+  },
+  benefitValue: {
+    ...typography.captionBold,
+    color: colors.text,
+    marginTop: 2,
+  },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+  },
   codeLabel: {
     ...typography.micro,
     color: colors.textSubtle,
@@ -285,6 +363,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.xs,
+  },
+  whatsappButton: {
+    flex: 1,
   },
   cardHeader: {
     padding: spacing.lg,

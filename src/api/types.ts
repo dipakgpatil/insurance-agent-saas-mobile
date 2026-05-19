@@ -148,6 +148,11 @@ export type MyReferralResponse = {
   code: ReferralCodeRead
   reward_balance: RewardBalanceRead
   referral_link: string
+  referrer_reward_points: number
+  new_user_reward_points: number
+  new_user_free_period_days: number
+  benefit_message: string | null
+  share_message: string | null
 }
 
 export type MyReferralEventsResponse = {
