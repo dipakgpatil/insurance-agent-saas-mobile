@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "policypulse",
+    "scheme": ["policypulse", "com.policypulse.mobile"],
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",

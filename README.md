@@ -76,7 +76,7 @@ This app is registered with these native identifiers:
 ```text
 Android package: com.policypulse.mobile
 iOS bundle ID:  com.policypulse.mobile
-URL scheme:     policypulse
+URL schemes:    policypulse, com.policypulse.mobile
 ```
 
 For Google signup/sign-in, create OAuth clients in the same Google/Firebase project used by the backend verifier.
@@ -86,8 +86,15 @@ Firebase/Google Console setup:
 1. Enable Authentication -> Sign-in method -> Google.
 2. Add an Android app with package `com.policypulse.mobile`.
 3. Add SHA-1/SHA-256 fingerprints for the Android build you will test. For local debug builds, run `gradlew.bat signingReport` after prebuild; for EAS/Play release builds, use the release fingerprint.
-4. Add an iOS app with bundle ID `com.policypulse.mobile`.
-5. Copy the Web, Android, and iOS OAuth client IDs into the mobile app environment:
+4. In the Android OAuth client, open **Advanced settings** and enable **Custom URI scheme**. Google AuthSession redirects back through:
+
+   ```text
+   com.policypulse.mobile:/oauthredirect
+   ```
+
+   If this setting is off, Google shows `Access blocked: project-491076784026's request is invalid` before the backend is called.
+5. Add an iOS app with bundle ID `com.policypulse.mobile`.
+6. Copy the Web, Android, and iOS OAuth client IDs into the mobile app environment:
 
 ```text
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
