@@ -8,6 +8,7 @@ import { Badge } from '@/components/Badge'
 import { Card } from '@/components/Card'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
+import { FeedbackModal } from '@/components/FeedbackModal'
 import { ScreenContainer } from '@/components/ScreenContainer'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Skeleton } from '@/components/Skeleton'
@@ -15,6 +16,7 @@ import { useAuth } from '@/context/useAuth'
 import { getReferralBenefit } from '@/api/referrals'
 import type { ReferralBenefitRead } from '@/api/types'
 import { useCustomers } from '@/hooks/useCustomers'
+import { useFeedbackPrompt } from '@/hooks/useFeedbackPrompt'
 import { usePolicies } from '@/hooks/usePolicies'
 import { compactCurrency, toNumber } from '@/lib/currency'
 import { formatDateShort, relativeRenewal } from '@/lib/dates'
@@ -40,6 +42,7 @@ export default function DashboardScreen() {
     usePolicies()
   const [refreshing, setRefreshing] = useState(false)
   const [referralBenefit, setReferralBenefit] = useState<ReferralBenefitRead | null>(null)
+  const feedback = useFeedbackPrompt()
 
   useEffect(() => {
     if (!accessToken) return
@@ -258,6 +261,12 @@ export default function DashboardScreen() {
           </Card>
         </View>
       </ScreenContainer>
+      <FeedbackModal
+        visible={feedback.visible}
+        submitting={feedback.submitting}
+        onSubmit={feedback.submit}
+        onSkip={feedback.skip}
+      />
     </SafeAreaView>
   )
 }

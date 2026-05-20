@@ -240,6 +240,25 @@ export type PolicyRead = {
   policy_extra_data: Record<string, unknown>
 }
 
+export type FeedbackPromptStatus = {
+  should_prompt: boolean
+  reason: string | null
+  customer_count: number
+  days_since_signup: number
+}
+
+export type FeedbackSubmitInput = {
+  rating: number
+  note?: string | null
+  source: 'mobile' | 'web'
+  app_version?: string | null
+}
+
+export type FeedbackSubmitResponse = {
+  id: string
+  message: string
+}
+
 export type DocumentRead = {
   id: string
   tenant_id: string
