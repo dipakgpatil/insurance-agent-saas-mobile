@@ -1,0 +1,18 @@
+PolicyOffice helps insurance agents manage renewals, customers, policy documents, Excel imports and referral rewards from one mobile workspace.
+
+Built for Indian insurance agents and agency teams, PolicyOffice keeps daily work organised so follow-ups do not depend on scattered spreadsheets, reminder notes or manual file folders.
+
+Key features:
+• Renewal dashboard for upcoming policy follow-ups
+• Customer and policy records in one tenant-scoped workspace
+• Policy PDF and scanned document upload
+• Excel import support for customer and policy data
+• Customer profile with attached files and policy history
+• Birthday and renewal reminders
+• Referral link sharing and reward tracking
+• WhatsApp-friendly actions for agent workflows
+• Secure login and role-based access through the PolicyOffice platform
+
+PolicyOffice is designed for insurance professionals who need a simple mobile way to track business, organise documents, and stay ahead of renewal conversations.
+
+This first release is intended for closed testing. Some capabilities may depend on your PolicyOffice workspace, backend configuration and subscription access.

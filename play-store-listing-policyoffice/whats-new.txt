@@ -1,0 +1,3 @@
+Initial closed-testing release for PolicyOffice.
+
+Includes login, onboarding, dashboard, renewals, customers, document upload, Excel import support, referrals and reward tracking.
