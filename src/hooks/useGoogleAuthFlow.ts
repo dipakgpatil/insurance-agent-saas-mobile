@@ -24,10 +24,10 @@ function currentPlatformClientId() {
 
 function missingClientMessage() {
   if (Platform.OS === 'android') {
-    return 'Google sign in needs EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID for package com.policypulse.mobile.'
+    return 'Google sign in needs EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID for package com.policyoffice.mobile.'
   }
   if (Platform.OS === 'ios') {
-    return 'Google sign in needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID for bundle com.policypulse.mobile.'
+    return 'Google sign in needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID for bundle com.policyoffice.mobile.'
   }
   return 'Google sign in needs EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
 }

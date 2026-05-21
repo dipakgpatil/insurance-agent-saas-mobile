@@ -101,7 +101,7 @@ export default function ProfileScreen() {
         </Pressable>
 
         <Text style={styles.footer}>
-          PolicyPulse mobile · {versionText}
+          PolicyOffice · {versionText}
         </Text>
       </ScreenContainer>
     </SafeAreaView>

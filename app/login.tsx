@@ -81,9 +81,9 @@ export default function LoginScreen() {
         >
           <View style={styles.brandRow}>
             <View style={styles.brandMark}>
-              <Text style={styles.brandMarkText}>P</Text>
+              <Text style={styles.brandMarkText}>PO</Text>
             </View>
-            <Text style={styles.brandText}>PolicyPulse</Text>
+            <Text style={styles.brandText}>PolicyOffice</Text>
           </View>
 
           <Text style={styles.title}>Welcome back</Text>
@@ -159,7 +159,7 @@ export default function LoginScreen() {
           />
 
           <Text style={styles.footer}>
-            New to PolicyPulse?{' '}
+            New to PolicyOffice?{' '}
             <Text style={styles.footerLink} onPress={() => router.push('/signup')}>
               Create an account
             </Text>

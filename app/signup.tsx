@@ -42,9 +42,9 @@ export default function SignupScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
           <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>P</Text>
+            <Text style={styles.brandMarkText}>PO</Text>
           </View>
-          <Text style={styles.brandText}>PolicyPulse</Text>
+          <Text style={styles.brandText}>PolicyOffice</Text>
         </View>
 
         <Text style={styles.title}>Start your agency workspace</Text>
@@ -66,7 +66,7 @@ export default function SignupScreen() {
             style={styles.input}
           />
           <Text style={styles.inputHelp}>
-            Add a code from a promoter or another PolicyPulse user to claim extra free time.
+            Add a code from a promoter or another PolicyOffice user to claim extra free time.
           </Text>
 
           <View style={styles.stepRow}>

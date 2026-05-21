@@ -249,7 +249,7 @@ export default function AgencyOnboardingScreen() {
                 <Text style={styles.sectionTitle}>Upload Excel sheet</Text>
                 <Text style={styles.helper}>
                   We auto-apply high-confidence mappings and skip columns that do not clearly
-                  match the PolicyPulse data model.
+                  match the PolicyOffice data model.
                 </Text>
                 <Button
                   label={uploadedImport ? 'Upload another Excel sheet' : 'Choose Excel / CSV file'}

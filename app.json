@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "PolicyPulse",
-    "slug": "policypulse-mobile",
+    "name": "PolicyOffice",
+    "slug": "policyoffice-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": ["policypulse", "com.policypulse.mobile"],
+    "scheme": ["policyoffice", "com.policyoffice.mobile"],
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -16,13 +16,13 @@
     "ios": {
       "supportsTablet": true,
       "buildNumber": "1",
-      "bundleIdentifier": "com.policypulse.mobile",
+      "bundleIdentifier": "com.policyoffice.mobile",
       "infoPlist": {
         "LSApplicationQueriesSchemes": ["whatsapp", "tel", "mailto", "sms"]
       }
     },
     "android": {
-      "package": "com.policypulse.mobile",
+      "package": "com.policyoffice.mobile",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
@@ -33,7 +33,7 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "policypulse" }],
+          "data": [{ "scheme": "policyoffice" }],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]

@@ -49,7 +49,7 @@ export function FeedbackModal({ visible, submitting, onSubmit, onSkip }: Props) 
           </View>
           <Text style={styles.title}>How are we doing?</Text>
           <Text style={styles.subtitle}>
-            You&apos;ve been using PolicyPulse for a while — your honest rating helps us improve.
+            You&apos;ve been using PolicyOffice for a while — your honest rating helps us improve.
           </Text>
 
           <View style={styles.starsRow}>

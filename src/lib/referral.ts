@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const REFERRAL_CODE_KEY = 'policypulse.referral_code.v1'
+const REFERRAL_CODE_KEY = 'policyoffice.referral_code.v1'
 
 export function normalizeReferralCode(value: string) {
   return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 32)

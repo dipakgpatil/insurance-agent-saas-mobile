@@ -6,7 +6,7 @@ import { completeAgencyOnboarding as completeAgencyOnboardingApi } from '@/api/o
 import type { AgencyOnboardingRequest } from '@/api/types'
 import { AuthContext, type AuthContextValue, type StoredSession } from './auth-context'
 
-const STORAGE_KEY = 'policypulse.session.v1'
+const STORAGE_KEY = 'policyoffice.session.v1'
 
 async function readStored(): Promise<StoredSession | null> {
   try {

@@ -82,7 +82,7 @@ export default function ReferralsScreen() {
     if (!link) return null
     const message =
       referral?.share_message ||
-      `I use PolicyPulse to manage insurance renewals. Join with my referral link and get extra free time: ${link}`
+      `I use PolicyOffice to manage insurance renewals. Join with my referral link and get extra free time: ${link}`
     return `https://wa.me/?text=${encodeURIComponent(message)}`
   }, [referral?.referral_link, referral?.share_message])
 
@@ -121,7 +121,7 @@ export default function ReferralsScreen() {
         <View>
           <Text style={styles.title}>Refer & Earn</Text>
           <Text style={styles.subtitle}>
-            Share PolicyPulse with another agency. Rewards appear after onboarding completes.
+            Share PolicyOffice with another agency. Rewards appear after onboarding completes.
           </Text>
         </View>
 
@@ -157,7 +157,7 @@ export default function ReferralsScreen() {
               <Text style={styles.sectionTitle}>Your referral link</Text>
               <Text style={styles.helper}>
                 {referral?.benefit_message ||
-                  'Share PolicyPulse with another insurance agency and track rewards here.'}
+                  'Share PolicyOffice with another insurance agency and track rewards here.'}
               </Text>
             </View>
           </View>

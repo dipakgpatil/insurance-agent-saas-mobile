@@ -7,7 +7,7 @@ import {
 } from '@/api/feedback'
 import { useAuth } from '@/context/useAuth'
 
-const SESSION_SHOWN_KEY = '__policypulse_feedback_shown__'
+const SESSION_SHOWN_KEY = '__policyoffice_feedback_shown__'
 
 /**
  * Decides whether to show the in-app feedback modal, and exposes submit/skip
