@@ -1,6 +1,6 @@
-# PolicyPulse Mobile
+# PolicyOffice Mobile
 
-Native iOS & Android client for the PolicyPulse SaaS, built with [Expo](https://expo.dev) + React Native + TypeScript. Pairs with the existing FastAPI backend at `insurance-agent-saas` and shares the same auth/data model used by the web app at `insurance-agent-saas-frontend`.
+Native iOS & Android client for the PolicyOffice SaaS, built with [Expo](https://expo.dev) + React Native + TypeScript. Pairs with the existing FastAPI backend at `insurance-agent-saas` and shares the same auth/data model used by the web app at `insurance-agent-saas-frontend`.
 
 ## What's inside
 
@@ -42,6 +42,13 @@ npm start
 # This embeds the JS bundle into the APK, so it does not need Metro at runtime.
 npm run apk:debug
 
+# Build first closed-testing release artifacts.
+# Outputs both APK for local install and AAB for Play Console closed testing.
+npm run apk:release
+
+# Faster rebuild after prebuild/native files already exist.
+npm run apk:release:fast
+
 # Build a Metro-dependent development APK only when you are running `npm start`.
 npm run apk:dev
 ```
@@ -74,9 +81,9 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.42:8000/api/v1
 This app is registered with these native identifiers:
 
 ```text
-Android package: com.policypulse.mobile
-iOS bundle ID:  com.policypulse.mobile
-URL schemes:    policypulse, com.policypulse.mobile
+Android package: com.policyoffice.mobile
+iOS bundle ID:  com.policyoffice.mobile
+URL schemes:    policyoffice, com.policyoffice.mobile
 ```
 
 For Google signup/sign-in, create OAuth clients in the same Google/Firebase project used by the backend verifier.
@@ -84,22 +91,22 @@ For Google signup/sign-in, create OAuth clients in the same Google/Firebase proj
 Firebase/Google Console setup:
 
 1. Enable Authentication -> Sign-in method -> Google.
-2. Add an Android app with package `com.policypulse.mobile`.
+2. Add an Android app with package `com.policyoffice.mobile`.
 3. Add SHA-1/SHA-256 fingerprints for the Android build you will test. For local debug builds, run `gradlew.bat signingReport` after prebuild; for EAS/Play release builds, use the release fingerprint.
 4. In the Android OAuth client, open **Advanced settings** and enable **Custom URI scheme**. Google AuthSession redirects back through:
 
    ```text
-   com.policypulse.mobile:/oauthredirect
+   com.policyoffice.mobile:/oauthredirect
    ```
 
    If this setting is off, Google shows `Access blocked: project-491076784026's request is invalid` before the backend is called.
-5. Add an iOS app with bundle ID `com.policypulse.mobile`.
+5. Add an iOS app with bundle ID `com.policyoffice.mobile`.
 6. Copy the Web, Android, and iOS OAuth client IDs into the mobile app environment:
 
 ```text
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
-EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<iOS OAuth client id for com.policypulse.mobile>
-EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=<Android OAuth client id for com.policypulse.mobile>
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<iOS OAuth client id for com.policyoffice.mobile>
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=<Android OAuth client id for com.policyoffice.mobile>
 ```
 
 For Android, register the debug or release SHA-1/SHA-256 fingerprint with the Android OAuth client. After native prebuild, you can inspect the local debug fingerprint with:
@@ -130,7 +137,7 @@ Mirrors the web app exactly:
 - `POST /auth/login` returns `{ access_token, refresh_token, user }`
 - `POST /auth/google` returns the same tokens plus onboarding flags
 - New Google users with no tenant are routed to `/onboarding/agency`, which calls `POST /onboarding/agency` and starts the free plan
-- Tokens are persisted in **`expo-secure-store`** (encrypted on-device storage) under the key `policypulse.session.v1`
+- Tokens are persisted in **`expo-secure-store`** (encrypted on-device storage) under the key `policyoffice.session.v1`
 - On launch, the stored token is verified against `GET /auth/me`; expired tokens cause an automatic redirect to `/login`
 - `POST /auth/logout` is called on sign-out, then local state is cleared regardless of network success
 - Demo credentials are pre-filled on the login screen: `admin1@demoagt1.test` / `DemoPass123!`
@@ -261,4 +268,4 @@ eas build --profile development --platform android
 
 ---
 
-Built to pair cleanly with the existing PolicyPulse web frontend and FastAPI backend. The mobile codebase intentionally mirrors the web's data shapes and naming so a developer can move between the two without retraining their mental model.
+Built to pair cleanly with the existing PolicyOffice web frontend and FastAPI backend. The mobile codebase intentionally mirrors the web's data shapes and naming so a developer can move between the two without retraining their mental model.
