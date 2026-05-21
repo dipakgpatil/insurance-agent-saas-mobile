@@ -42,12 +42,19 @@ npm start
 # This embeds the JS bundle into the APK, so it does not need Metro at runtime.
 npm run apk:debug
 
-# Build first closed-testing release artifacts.
-# Outputs both APK for local install and AAB for Play Console closed testing.
+# Build unsigned/debug-signed release-mode artifacts for local install checks.
 npm run apk:release
 
 # Faster rebuild after prebuild/native files already exist.
 npm run apk:release:fast
+
+# Build Play Store upload-key-signed artifacts.
+# Requires release-signing/playstore-signing.properties on this machine.
+# Upload the AAB from dist/play-store/.
+npm run play:release
+
+# Faster signed rebuild after prebuild/native files already exist.
+npm run play:release:fast
 
 # Build a Metro-dependent development APK only when you are running `npm start`.
 npm run apk:dev
