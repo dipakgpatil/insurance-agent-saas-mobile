@@ -171,6 +171,28 @@ function Repair-ExpoModulesCoreForApi35 {
     }
 }
 
+function Repair-ReactNativeScreensForAndroid15 {
+    $screenStackPath = Join-Path $projectRoot "node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt"
+    if (-not (Test-Path $screenStackPath)) {
+        return
+    }
+
+    $source = Get-Content -Raw $screenStackPath
+    $fixed = $source.Replace(
+        "drawingOpPool.removeLast()",
+        "drawingOpPool.removeAt(drawingOpPool.lastIndex)"
+    )
+    $fixed = $fixed.Replace(
+        "drawingOpPool.removeFirst()",
+        "drawingOpPool.removeAt(0)"
+    )
+    if ($fixed -ne $source) {
+        Write-Host "==> Patching react-native-screens Android 15 Kotlin removeLast/removeFirst compatibility"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($screenStackPath, $fixed, $utf8NoBom)
+    }
+}
+
 Write-Host ""
 Write-Host "==> PolicyOffice Android release build" -ForegroundColor Cyan
 Write-Host "    Project root: $projectRoot"
@@ -189,6 +211,7 @@ if (-not (Test-Path "node_modules")) {
 }
 
 Repair-ExpoModulesCoreForApi35
+Repair-ReactNativeScreensForAndroid15
 
 if (-not $SkipPrebuild) {
     $prebuildArgs = @('expo', 'prebuild', '--platform', 'android')

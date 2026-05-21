@@ -56,6 +56,9 @@ npm run play:release
 # Faster signed rebuild after prebuild/native files already exist.
 npm run play:release:fast
 
+# Fastest Play Console path: build only the release-signed AAB.
+npm run play:aab
+
 # Build a Metro-dependent development APK only when you are running `npm start`.
 npm run apk:dev
 ```

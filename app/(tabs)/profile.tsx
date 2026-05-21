@@ -30,7 +30,7 @@ export default function ProfileScreen() {
     ])
   }
 
-  const versionText = `v${Constants.expoConfig?.version ?? '1.0.1'}`
+  const versionText = `v${Constants.expoConfig?.version ?? '1.0.2'}`
   const role = user?.roles?.join(', ') || 'Agent'
 
   return (
