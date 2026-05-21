@@ -50,7 +50,7 @@ npm run apk:release:fast
 
 # Build Play Store upload-key-signed artifacts.
 # Requires release-signing/playstore-signing.properties on this machine.
-# Upload the AAB from dist/play-store/.
+# Upload the AAB from dist/play-store/. The build targets Android API 35.
 npm run play:release
 
 # Faster signed rebuild after prebuild/native files already exist.

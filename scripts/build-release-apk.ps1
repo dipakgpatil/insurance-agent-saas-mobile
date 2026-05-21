@@ -31,13 +31,17 @@ schemes, icons, or native configuration changed.
 .PARAMETER RequireReleaseSigning
 Fail unless a Play upload keystore config is present, then patch the generated
 Android project to sign the release build with that upload key.
+
+.PARAMETER BundleOnly
+Build only the Android App Bundle. This is faster for Play Console uploads.
 #>
 [CmdletBinding()]
 param(
     [switch]$SkipPrebuild,
     [switch]$SkipClean,
     [switch]$CleanPrebuild,
-    [switch]$RequireReleaseSigning
+    [switch]$RequireReleaseSigning,
+    [switch]$BundleOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,6 +153,24 @@ function Enable-ReleaseSigningInGradle {
     [System.IO.File]::WriteAllText($buildGradlePath, $buildGradle, $utf8NoBom)
 }
 
+function Repair-ExpoModulesCoreForApi35 {
+    $permissionsServicePath = Join-Path $projectRoot "node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt"
+    if (-not (Test-Path $permissionsServicePath)) {
+        return
+    }
+
+    $source = Get-Content -Raw $permissionsServicePath
+    $fixed = $source.Replace(
+        "return requestedPermissions.contains(permission)",
+        "return requestedPermissions?.contains(permission) == true"
+    )
+    if ($fixed -ne $source) {
+        Write-Host "==> Patching expo-modules-core Android 15 permission compile compatibility"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($permissionsServicePath, $fixed, $utf8NoBom)
+    }
+}
+
 Write-Host ""
 Write-Host "==> PolicyOffice Android release build" -ForegroundColor Cyan
 Write-Host "    Project root: $projectRoot"
@@ -165,6 +187,8 @@ if (-not (Test-Path "node_modules")) {
     npm install --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
 }
+
+Repair-ExpoModulesCoreForApi35
 
 if (-not $SkipPrebuild) {
     $prebuildArgs = @('expo', 'prebuild', '--platform', 'android')
@@ -185,10 +209,15 @@ if ($hasReleaseSigning) {
 
 $gradleArgs = @()
 if (-not $SkipClean) { $gradleArgs += 'clean' }
-$gradleArgs += 'assembleRelease'
+if (-not $BundleOnly) {
+    $gradleArgs += 'assembleRelease'
+}
 $gradleArgs += 'bundleRelease'
 $gradleArgs += '--no-daemon'
 $gradleArgs += '--console=plain'
+$gradleArgs += '-Pandroid.buildToolsVersion=35.0.0'
+$gradleArgs += '-Pandroid.compileSdkVersion=35'
+$gradleArgs += '-Pandroid.targetSdkVersion=35'
 $gradleArgs += '-PreactNativeArchitectures=armeabi-v7a,arm64-v8a'
 
 Set-Location (Join-Path $projectRoot "android")
@@ -209,7 +238,7 @@ if (-not (Test-Path $distDir)) { New-Item -ItemType Directory -Path $distDir | O
 
 $apkSrc = Join-Path $projectRoot "android/app/build/outputs/apk/release/app-release.apk"
 $aabSrc = Join-Path $projectRoot "android/app/build/outputs/bundle/release/app-release.aab"
-if (-not (Test-Path $apkSrc)) {
+if (-not $BundleOnly -and -not (Test-Path $apkSrc)) {
     throw "Build completed but APK not found at $apkSrc"
 }
 if (-not (Test-Path $aabSrc)) {
@@ -219,19 +248,27 @@ if (-not (Test-Path $aabSrc)) {
 $signedSuffix = if ($hasReleaseSigning) { "-release-signed" } else { "" }
 $apkDst = Join-Path $distDir "policyoffice-v$version-$stamp$signedSuffix.apk"
 $aabDst = Join-Path $distDir "policyoffice-v$version-$stamp$signedSuffix.aab"
-Copy-Item $apkSrc $apkDst -Force
+if (-not $BundleOnly) {
+    Copy-Item $apkSrc $apkDst -Force
+}
 Copy-Item $aabSrc $aabDst -Force
 
-$sizeMB = [math]::Round((Get-Item $apkDst).Length / 1MB, 1)
+$sizeMB = if (-not $BundleOnly) { [math]::Round((Get-Item $apkDst).Length / 1MB, 1) } else { $null }
 $aabSizeMB = [math]::Round((Get-Item $aabDst).Length / 1MB, 1)
 
 Write-Host ""
 Write-Host "==> Done." -ForegroundColor Green
-Write-Host "    APK: $apkDst" -ForegroundColor Green
+if (-not $BundleOnly) {
+    Write-Host "    APK: $apkDst" -ForegroundColor Green
+}
 Write-Host "    AAB: $aabDst" -ForegroundColor Green
-Write-Host ("    APK size: {0} MB" -f $sizeMB)
+if (-not $BundleOnly) {
+    Write-Host ("    APK size: {0} MB" -f $sizeMB)
+}
 Write-Host ("    AAB size: {0} MB" -f $aabSizeMB)
-Write-Host "    Install on a connected device:  adb install -r `"$apkDst`""
+if (-not $BundleOnly) {
+    Write-Host "    Install on a connected device:  adb install -r `"$apkDst`""
+}
 if ($hasReleaseSigning) {
     Write-Host "    Upload this to Play Console closed testing: $aabDst" -ForegroundColor Green
 } else {

@@ -1,6 +1,6 @@
 {
   "name": "policyoffice-mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -17,6 +17,7 @@
     "apk:release:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release-apk.ps1 -SkipPrebuild -SkipClean",
     "play:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release-apk.ps1 -RequireReleaseSigning",
     "play:release:fast": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release-apk.ps1 -SkipPrebuild -SkipClean -RequireReleaseSigning",
+    "play:aab": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release-apk.ps1 -SkipPrebuild -SkipClean -RequireReleaseSigning -BundleOnly",
     "assets:brand": "python scripts/generate_policyoffice_assets.py",
     "play:assets": "python scripts/generate_play_store_listing_assets.py",
     "eas:android:preview": "eas build --platform android --profile preview",
