@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/Skeleton'
 import { useCustomers } from '@/hooks/useCustomers'
 import { formatDate } from '@/lib/dates'
 import { type BirthdayBucket, type BirthdayEntry, buildBirthdays } from '@/lib/insights'
+import { titleCaseName } from '@/lib/names'
 import { sendWish } from '@/lib/whatsapp'
 import { BIRTHDAY_WISHES, buildWishMessage, type WishTemplate } from '@/lib/wishes'
 import { colors, radii, shadows, spacing, toneStyles, typography, type Tone } from '@/theme'
@@ -236,7 +237,7 @@ function BirthdayCard({
         <Avatar name={entry.customer.full_name} size={44} />
         <View style={{ flex: 1 }}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {entry.customer.full_name}
+            {titleCaseName(entry.customer.full_name)}
           </Text>
           <Text style={styles.cardAgeLine} numberOfLines={1}>
             {ageLine}

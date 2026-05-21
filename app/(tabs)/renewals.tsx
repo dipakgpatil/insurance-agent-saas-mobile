@@ -21,6 +21,7 @@ import { usePolicies } from '@/hooks/usePolicies'
 import { CATEGORY_VISUAL, classifyPolicy } from '@/lib/classify'
 import { formatCurrency } from '@/lib/currency'
 import { formatDate, relativeRenewal } from '@/lib/dates'
+import { titleCaseName } from '@/lib/names'
 import {
   buildRenewals,
   type RenewalBucket,
@@ -247,7 +248,7 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
             style={styles.bodyPress}
           >
             <Text style={styles.customerName} numberOfLines={1}>
-              {entry.customer?.full_name ?? 'Unknown customer'}
+              {titleCaseName(entry.customer?.full_name) || 'Unknown customer'}
             </Text>
             <Text style={styles.policyLine} numberOfLines={1}>
               <Text style={styles.policyNumber}>
