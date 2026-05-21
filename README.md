@@ -69,9 +69,9 @@ If you don't have Xcode/Android Studio set up, install **Expo Go** on your phone
 
 The mobile app reads the backend URL from, in priority order:
 
-1. `EXPO_PUBLIC_API_BASE_URL` (set in `.env` or shell — must include `/api/v1`)
+1. `EXPO_PUBLIC_API_BASE_URL` (set in `.env` or shell — `/api/v1` is appended automatically if omitted)
 2. `extra.apiBaseUrl` in `app.json` (the committed default)
-3. `https://insurance-agent-saas-production.up.railway.app/api/v1` (final fallback)
+3. `https://api.policyoffice.in/api/v1` (final fallback)
 
 Copy `.env.example` to `.env` to override locally:
 
@@ -101,8 +101,8 @@ For Google signup/sign-in, create OAuth clients in the same Google/Firebase proj
 Firebase/Google Console setup:
 
 1. Enable Authentication -> Sign-in method -> Google.
-2. Add an Android app with package `com.policyoffice.mobile`.
-3. Add SHA-1/SHA-256 fingerprints for the Android build you will test. For local debug builds, run `gradlew.bat signingReport` after prebuild; for EAS/Play release builds, use the release fingerprint.
+2. Add an Android app/OAuth client with package `com.policyoffice.mobile`. An Android client for the old package `com.policypulse.mobile` will fail with Google `400 invalid_request`.
+3. Add SHA-1/SHA-256 fingerprints for the Android build you will test. For local debug builds, run `gradlew.bat signingReport` after prebuild; for release builds, add the release upload-key fingerprint. If the app is installed from Play Console closed testing with Play App Signing enabled, also add the **Play App Signing certificate** SHA-1 from Play Console -> Setup -> App integrity.
 4. In the Android OAuth client, open **Advanced settings** and enable **Custom URI scheme**. Google AuthSession redirects back through:
 
    ```text
@@ -118,6 +118,8 @@ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
 EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<iOS OAuth client id for com.policyoffice.mobile>
 EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=<Android OAuth client id for com.policyoffice.mobile>
 ```
+
+These `EXPO_PUBLIC_*` values are compiled into the native bundle, so rebuild and reinstall the APK/AAB after changing them.
 
 For Android, register the debug or release SHA-1/SHA-256 fingerprint with the Android OAuth client. After native prebuild, you can inspect the local debug fingerprint with:
 

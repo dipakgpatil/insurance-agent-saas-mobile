@@ -33,7 +33,7 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "policyoffice" }],
+          "data": [{ "scheme": "policyoffice" }, { "scheme": "com.policyoffice.mobile" }],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
@@ -46,7 +46,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://insurance-agent-saas-production.up.railway.app/api/v1",
+      "apiBaseUrl": "https://api.policyoffice.in/api/v1",
       "googleWebClientId": "",
       "googleIosClientId": "",
       "googleAndroidClientId": ""
