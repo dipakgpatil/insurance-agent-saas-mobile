@@ -35,7 +35,6 @@ export function uploadRenewalImport(
     name: file.name,
     type: file.mimeType ?? excelMimeType(file.name),
   } as unknown as Blob)
-
   return apiRequest<ExcelImportUploadResponse>('/imports/renewals/upload', {
     method: 'POST',
     token,

@@ -1,18 +1,41 @@
 import { Ionicons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Avatar } from '@/components/Avatar'
 import { Card } from '@/components/Card'
 import { ScreenContainer } from '@/components/ScreenContainer'
 import { useAuth } from '@/context/useAuth'
+import { downloadProfileExport, listExcelProfiles, type ExcelFormatProfileRead } from '@/api/excel_profiles'
 import { colors, radii, spacing, typography } from '@/theme'
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth()
+  const { user, logout, accessToken } = useAuth()
   const [signingOut, setSigningOut] = useState(false)
+  const [profiles, setProfiles] = useState<ExcelFormatProfileRead[]>([])
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!accessToken) return
+    listExcelProfiles(accessToken).then(setProfiles).catch(() => null)
+  }, [accessToken])
+
+  const handleDownload = useCallback(
+    async (profile: ExcelFormatProfileRead, scope: 'active' | 'all') => {
+      if (!accessToken) return
+      setDownloadingId(profile.id + scope)
+      try {
+        await downloadProfileExport(accessToken, profile.id, profile.name, scope)
+      } catch (err) {
+        Alert.alert('Download failed', err instanceof Error ? err.message : 'Could not export Excel file')
+      } finally {
+        setDownloadingId(null)
+      }
+    },
+    [accessToken],
+  )
 
   const handleSignOut = () => {
     Alert.alert('Sign out?', 'You will need to sign in again to access your dashboard.', [
@@ -78,22 +101,82 @@ export default function ProfileScreen() {
           />
           <ToolRow
             icon="refresh-circle"
-            iconColor={colors.info}
-            iconBg={colors.infoLight}
-            title="Upload renewal"
-            subtitle="Apply a renewal sheet and keep old policies in history."
-            onPress={() => router.push('/import-renewal')}
+            iconColor={colors.success}
+            iconBg={colors.successLight}
+            title="Upload Renewal"
+            subtitle="Upload a renewal sheet to mark old terms renewed and create new active policies."
+            onPress={() => router.push('/renewal-upload')}
             divider
           />
           <ToolRow
             icon="people"
-            iconColor={colors.success}
-            iconBg={colors.successLight}
+            iconColor={colors.info}
+            iconBg={colors.infoLight}
             title="Refer agents and earn"
             subtitle="Share your referral code and unlock benefits."
             onPress={() => router.push('/(tabs)/referrals')}
           />
         </Card>
+
+        {profiles.length > 0 ? (
+          <Card style={{ padding: 0 }}>
+            <Text style={styles.sectionLabel}>Download Excel</Text>
+            {profiles.map((profile, index) => (
+              <View
+                key={profile.id}
+                style={[
+                  styles.profileRow,
+                  index < profiles.length - 1 ? styles.profileRowBorder : null,
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.profileName} numberOfLines={1}>
+                    {profile.name}
+                    {profile.is_default ? '  ★' : ''}
+                  </Text>
+                  <Text style={styles.profileMeta}>
+                    {profile.column_schema.length} columns
+                    {profile.source_sheet_name ? ` · ${profile.source_sheet_name}` : ''}
+                  </Text>
+                </View>
+                <View style={styles.downloadBtns}>
+                  <Pressable
+                    onPress={() => void handleDownload(profile, 'active')}
+                    disabled={downloadingId !== null}
+                    style={({ pressed }) => [
+                      styles.downloadBtn,
+                      { backgroundColor: colors.primaryLight },
+                      pressed ? { opacity: 0.7 } : null,
+                    ]}
+                  >
+                    {downloadingId === profile.id + 'active' ? (
+                      <Ionicons name="hourglass" size={14} color={colors.primary} />
+                    ) : (
+                      <Ionicons name="download" size={14} color={colors.primary} />
+                    )}
+                    <Text style={[styles.downloadBtnText, { color: colors.primary }]}>Active</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => void handleDownload(profile, 'all')}
+                    disabled={downloadingId !== null}
+                    style={({ pressed }) => [
+                      styles.downloadBtn,
+                      { backgroundColor: colors.surfaceMuted },
+                      pressed ? { opacity: 0.7 } : null,
+                    ]}
+                  >
+                    {downloadingId === profile.id + 'all' ? (
+                      <Ionicons name="hourglass" size={14} color={colors.textSubtle} />
+                    ) : (
+                      <Ionicons name="download-outline" size={14} color={colors.textSubtle} />
+                    )}
+                    <Text style={[styles.downloadBtnText, { color: colors.textSubtle }]}>All</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </Card>
+        ) : null}
 
         <Pressable
           onPress={handleSignOut}
@@ -238,5 +321,41 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     textAlign: 'center',
     marginTop: spacing.md,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  profileRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  profileName: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  profileMeta: {
+    ...typography.caption,
+    color: colors.textSubtle,
+    marginTop: 2,
+  },
+  downloadBtns: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radii.sm,
+  },
+  downloadBtnText: {
+    ...typography.micro,
+    fontWeight: '600',
   },
 })
