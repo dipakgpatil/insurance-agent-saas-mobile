@@ -77,6 +77,15 @@ export default function ProfileScreen() {
             divider
           />
           <ToolRow
+            icon="refresh-circle"
+            iconColor={colors.info}
+            iconBg={colors.infoLight}
+            title="Upload renewal"
+            subtitle="Apply a renewal sheet and keep old policies in history."
+            onPress={() => router.push('/import-renewal')}
+            divider
+          />
+          <ToolRow
             icon="people"
             iconColor={colors.success}
             iconBg={colors.successLight}

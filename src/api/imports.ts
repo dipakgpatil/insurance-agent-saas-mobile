@@ -25,6 +25,24 @@ export function uploadExcelImport(
   })
 }
 
+export function uploadRenewalImport(
+  token: string,
+  file: PickedImportFile,
+): Promise<ExcelImportUploadResponse> {
+  const form = new FormData()
+  form.append('file', {
+    uri: file.uri,
+    name: file.name,
+    type: file.mimeType ?? excelMimeType(file.name),
+  } as unknown as Blob)
+
+  return apiRequest<ExcelImportUploadResponse>('/imports/renewals/upload', {
+    method: 'POST',
+    token,
+    body: form,
+  })
+}
+
 export function confirmImportMapping(
   token: string,
   importId: string,
@@ -38,6 +56,23 @@ export function confirmImportMapping(
       column_mapping: columnMapping,
       save_template: true,
       template_name: templateName ?? 'Mobile onboarding auto-map',
+    }),
+  })
+}
+
+export function confirmRenewalImport(
+  token: string,
+  importId: string,
+  columnMapping: Record<string, string>,
+  templateName?: string,
+): Promise<ConfirmImportMappingResponse> {
+  return apiRequest<ConfirmImportMappingResponse>(`/imports/${importId}/confirm-renewal`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({
+      column_mapping: columnMapping,
+      save_template: true,
+      template_name: templateName ?? 'Mobile renewal auto-map',
     }),
   })
 }

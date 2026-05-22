@@ -175,6 +175,7 @@ export type ImportMappingSuggestion = {
 export type ExcelImportUploadResponse = {
   import_id: string
   document_id: string
+  excel_format_profile_id: string | null
   status: string
   source_file_name: string | null
   source_sheet_name: string | null
@@ -190,6 +191,7 @@ export type ExcelImportUploadResponse = {
 
 export type ConfirmImportMappingResponse = {
   import_id: string
+  excel_format_profile_id: string | null
   status: string
   total_rows: number
   processed_rows: number
