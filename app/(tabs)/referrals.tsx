@@ -77,14 +77,11 @@ export default function ReferralsScreen() {
     }
   }, [load])
 
-  const whatsappUrl = useMemo(() => {
+  const whatsappMessage = useMemo(() => {
     const link = referral?.referral_link
     if (!link) return null
-    const message =
-      referral?.share_message ||
-      `I use PolicyOffice to manage insurance renewals. Join with my referral link and get extra free time: ${link}`
-    return `https://wa.me/?text=${encodeURIComponent(message)}`
-  }, [referral?.referral_link, referral?.share_message])
+    return buildReferralShareMessage(link)
+  }, [referral?.referral_link])
 
   const handleGenerate = async () => {
     if (!accessToken) return
@@ -103,11 +100,24 @@ export default function ReferralsScreen() {
   }
 
   const shareWhatsApp = async () => {
-    if (!whatsappUrl) return
+    if (!whatsappMessage) return
+    const encoded = encodeURIComponent(whatsappMessage)
     try {
-      await Linking.openURL(whatsappUrl)
+      const appUrl = `whatsapp://send?text=${encoded}`
+      const supported = await Linking.canOpenURL(appUrl)
+      if (supported) {
+        await Linking.openURL(appUrl)
+        return
+      }
     } catch {
-      await copyLink()
+      // Continue to the universal link fallback.
+    }
+
+    try {
+      await Linking.openURL(`https://wa.me/?text=${encoded}`)
+    } catch {
+      await Clipboard.setStringAsync(whatsappMessage)
+      Alert.alert('Message copied', 'WhatsApp could not be opened, so the invite message was copied.')
     }
   }
 
@@ -257,6 +267,10 @@ function formatFreePeriod(days: number) {
     return `${months} month${months === 1 ? '' : 's'} free`
   }
   return `${days} days free`
+}
+
+function buildReferralShareMessage(link: string) {
+  return `Hi, I would like to invite you to PolicyOffice. If you are an insurance agent, get rid of Excel sheets and manage renewals easily: ${link}`
 }
 
 const styles = StyleSheet.create({
