@@ -5,20 +5,31 @@
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": ["policyoffice", "com.policyoffice.mobile"],
+    "scheme": [
+      "policyoffice",
+      "com.policyoffice.mobile"
+    ],
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
       "backgroundColor": "#0f172a",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "buildNumber": "1",
       "bundleIdentifier": "com.policyoffice.mobile",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["whatsapp", "tel", "mailto", "sms"]
+        "LSApplicationQueriesSchemes": [
+          "whatsapp",
+          "tel",
+          "mailto",
+          "sms"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,12 +40,24 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "permissions": ["INTERNET"],
+      "permissions": [
+        "INTERNET"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "policyoffice" }, { "scheme": "com.policyoffice.mobile" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "policyoffice"
+            },
+            {
+              "scheme": "com.policyoffice.mobile"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -49,7 +72,14 @@
       "apiBaseUrl": "https://api.policyoffice.in/api/v1",
       "googleWebClientId": "",
       "googleIosClientId": "",
-      "googleAndroidClientId": ""
-    }
+      "googleAndroidClientId": "",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "d71c39ba-a936-46e6-8c03-119d2ab1f0c2"
+      }
+    },
+    "owner": "dipakgpatil"
   }
 }
