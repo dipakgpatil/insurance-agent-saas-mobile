@@ -10,7 +10,10 @@ const extra = (Constants.expoConfig?.extra ?? {}) as {
 const API_VERSION_PATH = '/api/v1'
 const fallbackBaseUrl = 'https://api.policyoffice.in/api/v1'
 
-const fromEnv = process.env.EXPO_PUBLIC_API_BASE_URL ?? extra.apiBaseUrl
+const fromEnv =
+  process.env.EXPO_PUBLIC_API_URL ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  extra.apiBaseUrl
 
 function normalizeApiBaseUrl(value?: string) {
   const rawValue = value && value.trim().length > 0 ? value : fallbackBaseUrl

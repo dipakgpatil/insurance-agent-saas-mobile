@@ -40,7 +40,7 @@ export function Button({
           opacity: isDisabled ? 0.55 : 1,
           paddingVertical: compact ? spacing.sm : spacing.md,
           paddingHorizontal: compact ? spacing.md : spacing.lg,
-          transform: pressed && !isDisabled ? [{ scale: 0.98 }] : undefined,
+          transform: pressed && !isDisabled ? [{ scale: 0.98 }] : [],
         },
         style as ViewStyle | undefined,
       ]}
