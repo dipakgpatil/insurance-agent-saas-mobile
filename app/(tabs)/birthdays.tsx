@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Skeleton } from '@/components/Skeleton'
 import { useCustomers } from '@/hooks/useCustomers'
+import { usePolicies } from '@/hooks/usePolicies'
 import { formatDate } from '@/lib/dates'
 import { type BirthdayBucket, type BirthdayEntry, buildBirthdays } from '@/lib/insights'
 import { titleCaseName } from '@/lib/names'
@@ -45,21 +46,25 @@ const BUCKET_LABEL: Record<BirthdayBucket, string> = {
 
 export default function BirthdaysScreen() {
   const { customers, loading, error, refresh } = useCustomers()
+  const { policies, refresh: refreshPolicies } = usePolicies()
   const [refreshing, setRefreshing] = useState(false)
   const [query, setQuery] = useState('')
   const [target, setTarget] = useState<BirthdayEntry | null>(null)
   const [outcome, setOutcome] = useState<string | null>(null)
 
-  const birthdays = useMemo(() => buildBirthdays(customers, 60), [customers])
+  const birthdays = useMemo(() => buildBirthdays(customers, policies, 60), [customers, policies])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return birthdays
     return birthdays.filter((entry) => {
       const haystack = [
+        entry.personName,
         entry.customer.full_name,
         entry.customer.mobile ?? '',
         entry.customer.email ?? '',
+        entry.relationship ?? '',
+        entry.policyNumber ?? '',
       ]
         .join(' ')
         .toLowerCase()
@@ -69,9 +74,9 @@ export default function BirthdaysScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await refresh()
+    await Promise.all([refresh(), refreshPolicies()])
     setRefreshing(false)
-  }, [refresh])
+  }, [refresh, refreshPolicies])
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -135,7 +140,7 @@ export default function BirthdaysScreen() {
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item.customer.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
@@ -234,14 +239,21 @@ function BirthdayCard({
       </View>
 
       <View style={styles.cardBody}>
-        <Avatar name={entry.customer.full_name} size={44} />
+        <Avatar name={entry.personName} size={44} />
         <View style={{ flex: 1 }}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {titleCaseName(entry.customer.full_name)}
+            {titleCaseName(entry.personName)}
           </Text>
           <Text style={styles.cardAgeLine} numberOfLines={1}>
             {ageLine}
           </Text>
+          {entry.isPolicyMember ? (
+            <Text style={styles.cardHolderLine} numberOfLines={1}>
+              {titleCaseName(entry.customer.full_name)}
+              {entry.relationship ? ` · ${entry.relationship}` : ''}
+              {entry.policyNumber ? ` · ${entry.policyNumber}` : ''}
+            </Text>
+          ) : null}
           <Text style={styles.cardMeta} numberOfLines={1}>
             {formatDate(entry.nextBirthday)}
             {entry.customer.mobile ? ` · ${entry.customer.mobile}` : ' · no mobile'}
@@ -304,7 +316,7 @@ function WishModal({
 
   useEffect(() => {
     if (entry) {
-      setMessage(buildWishMessage(template, entry.customer.full_name))
+      setMessage(buildWishMessage(template, entry.personName))
       setEdited(false)
     }
   }, [entry, template])
@@ -313,7 +325,7 @@ function WishModal({
     (tpl: WishTemplate) => {
       setTemplate(tpl)
       if (entry) {
-        setMessage(buildWishMessage(tpl, entry.customer.full_name))
+        setMessage(buildWishMessage(tpl, entry.personName))
         setEdited(false)
       }
     },
@@ -356,7 +368,9 @@ function WishModal({
             <View style={{ flex: 1 }}>
               <Text style={styles.modalTitle}>Send a birthday wish</Text>
               <Text style={styles.modalSubtitle} numberOfLines={1}>
-                {entry.customer.full_name}
+                {entry.isPolicyMember
+                  ? `${entry.personName} via ${entry.customer.full_name}`
+                  : entry.customer.full_name}
                 {entry.customer.mobile ? ` · ${entry.customer.mobile}` : ' · no mobile'}
               </Text>
             </View>
@@ -573,6 +587,11 @@ const styles = StyleSheet.create({
     ...typography.bodyBold,
     color: colors.text,
     fontSize: 13,
+    marginTop: 2,
+  },
+  cardHolderLine: {
+    ...typography.captionBold,
+    color: colors.primaryDark,
     marginTop: 2,
   },
   cardMeta: {

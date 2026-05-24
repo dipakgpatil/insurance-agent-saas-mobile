@@ -33,14 +33,12 @@ export default function AnalyticsScreen() {
     const renewals = buildRenewals(policies, customers)
     const buckets = renewalsByBucket(renewals)
     const monthly = monthlyRenewals(policies)
-    const birthdays = buildBirthdays(customers, 30)
+    const birthdays = buildBirthdays(customers, policies, 30)
     const today = new Date()
     const thisMonth = today.getMonth()
-    const birthdaysThisMonth = customers.filter((c) => {
-      if (!c.date_of_birth) return false
-      const d = new Date(c.date_of_birth)
-      return !Number.isNaN(d.getTime()) && d.getMonth() === thisMonth
-    }).length
+    const birthdaysThisMonth = buildBirthdays(customers, policies, 31).filter(
+      (entry) => entry.nextBirthday.getMonth() === thisMonth,
+    ).length
 
     const mix = CATEGORIES.map((category) => ({
       label: CATEGORY_LABELS[category],

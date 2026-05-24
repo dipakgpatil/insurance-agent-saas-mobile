@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Linking from 'expo-linking'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { updateCustomer } from '@/api/customers'
 import { listDocuments } from '@/api/documents'
 import type { DocumentRead, PolicyRead } from '@/api/types'
 import { Avatar } from '@/components/Avatar'
@@ -32,7 +33,7 @@ import { colors, radii, shadows, spacing, toneStyles, typography } from '@/theme
 export default function CustomerDetailScreen() {
   const { customerId } = useLocalSearchParams<{ customerId: string }>()
   const { accessToken } = useAuth()
-  const { customers, loading: customersLoading } = useCustomers()
+  const { customers, loading: customersLoading, refresh: refreshCustomers } = useCustomers()
   const { policies, loading: policiesLoading } = usePolicies()
 
   const customer = useMemo(() => customers.find((c) => c.id === customerId), [customers, customerId])
@@ -63,6 +64,12 @@ export default function CustomerDetailScreen() {
   const [documents, setDocuments] = useState<DocumentRead[]>([])
   const [docsLoading, setDocsLoading] = useState(true)
   const [docsError, setDocsError] = useState<string | null>(null)
+  const [editingContact, setEditingContact] = useState(false)
+  const [contactMobile, setContactMobile] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [savingContact, setSavingContact] = useState(false)
+  const [contactError, setContactError] = useState<string | null>(null)
+  const [contactMessage, setContactMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!accessToken || !customerId) return
@@ -88,6 +95,32 @@ export default function CustomerDetailScreen() {
       cancelled = true
     }
   }, [accessToken, customerId])
+
+  useEffect(() => {
+    if (!customer) return
+    setContactMobile(customer.mobile ?? '')
+    setContactEmail(customer.email ?? '')
+  }, [customer])
+
+  const saveContact = async () => {
+    if (!accessToken || !customer) return
+    try {
+      setSavingContact(true)
+      setContactError(null)
+      setContactMessage(null)
+      await updateCustomer(accessToken, customer.id, {
+        mobile: contactMobile.trim() || null,
+        email: contactEmail.trim() || null,
+      })
+      await refreshCustomers()
+      setEditingContact(false)
+      setContactMessage('Contact details updated.')
+    } catch (error) {
+      setContactError(error instanceof Error ? error.message : 'Could not update contact details')
+    } finally {
+      setSavingContact(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -149,6 +182,71 @@ export default function CustomerDetailScreen() {
                 email={customer.email}
                 style={{ marginTop: spacing.md }}
               />
+
+              <Pressable
+                onPress={() => {
+                  setEditingContact((value) => !value)
+                  setContactError(null)
+                  setContactMessage(null)
+                }}
+                android_ripple={{ color: colors.surfaceMuted }}
+                style={({ pressed }) => [styles.editContactBtn, pressed ? { opacity: 0.85 } : null]}
+              >
+                <Ionicons name="create" size={16} color={colors.primaryDark} />
+                <Text style={styles.editContactText}>Edit contact</Text>
+              </Pressable>
+
+              {contactError ? <Text style={styles.contactError}>{contactError}</Text> : null}
+              {contactMessage ? <Text style={styles.contactMessage}>{contactMessage}</Text> : null}
+
+              {editingContact ? (
+                <View style={styles.contactEditor}>
+                  <View style={styles.editorField}>
+                    <Text style={styles.editorLabel}>Mobile</Text>
+                    <TextInput
+                      value={contactMobile}
+                      onChangeText={setContactMobile}
+                      keyboardType="phone-pad"
+                      placeholder="Mobile"
+                      placeholderTextColor={colors.textSubtle}
+                      style={styles.editorInput}
+                    />
+                  </View>
+                  <View style={styles.editorField}>
+                    <Text style={styles.editorLabel}>Email</Text>
+                    <TextInput
+                      value={contactEmail}
+                      onChangeText={setContactEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      placeholder="Email"
+                      placeholderTextColor={colors.textSubtle}
+                      style={styles.editorInput}
+                    />
+                  </View>
+                  <View style={styles.editorActions}>
+                    <Pressable
+                      onPress={() => {
+                        setEditingContact(false)
+                        setContactMobile(customer.mobile ?? '')
+                        setContactEmail(customer.email ?? '')
+                      }}
+                      disabled={savingContact}
+                      style={styles.editorSecondaryBtn}
+                    >
+                      <Text style={styles.editorSecondaryText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={saveContact}
+                      disabled={savingContact}
+                      style={[styles.editorPrimaryBtn, savingContact ? { opacity: 0.6 } : null]}
+                    >
+                      <Ionicons name="save" size={15} color="#ffffff" />
+                      <Text style={styles.editorPrimaryText}>{savingContact ? 'Saving…' : 'Save'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
             </Card>
 
             <View>
@@ -489,6 +587,81 @@ const styles = StyleSheet.create({
   noContact: {
     ...typography.caption,
     color: colors.textSubtle,
+  },
+  editContactBtn: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+  },
+  editContactText: {
+    ...typography.captionBold,
+    color: colors.primaryDark,
+  },
+  contactEditor: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.sm,
+  },
+  editorField: {
+    gap: 6,
+  },
+  editorLabel: {
+    ...typography.captionBold,
+    color: colors.textMuted,
+  },
+  editorInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  editorActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  editorSecondaryBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+  },
+  editorSecondaryText: {
+    ...typography.captionBold,
+    color: colors.textMuted,
+  },
+  editorPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.primary,
+  },
+  editorPrimaryText: {
+    ...typography.captionBold,
+    color: '#ffffff',
+  },
+  contactError: {
+    ...typography.caption,
+    color: colors.danger,
+    marginTop: spacing.sm,
+  },
+  contactMessage: {
+    ...typography.caption,
+    color: colors.success,
+    marginTop: spacing.sm,
   },
   tabsRow: {
     flexDirection: 'row',

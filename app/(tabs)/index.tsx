@@ -25,6 +25,7 @@ import { formatDateShort, relativeRenewal } from '@/lib/dates'
 import {
   buildBirthdays,
   buildRenewals,
+  policiesByInsurer,
   type RenewalBucket,
   type RenewalEntry,
 } from '@/lib/insights'
@@ -70,7 +71,8 @@ export default function DashboardScreen() {
 
   const data = useMemo(() => {
     const renewals = buildRenewals(policies, customers)
-    const birthdays = buildBirthdays(customers, 30)
+    const birthdays = buildBirthdays(customers, policies, 30)
+    const insurers = policiesByInsurer(policies, 5)
     const upcoming = renewals
       .filter((entry) => entry.daysUntil >= -30 && entry.daysUntil <= 60)
       .slice(0, 8)
@@ -84,6 +86,7 @@ export default function DashboardScreen() {
     )
     return {
       birthdays,
+      insurers,
       upcoming,
       featured: upcoming[0] ?? null,
       rest: upcoming.slice(1),
@@ -159,6 +162,34 @@ export default function DashboardScreen() {
 
         <View>
           <SectionHeader
+            title="Policies by insurer"
+            subtitle={
+              data.insurers.length === 0
+                ? 'No insurer data yet.'
+                : `${policies.length} policies on file`
+            }
+          />
+          <Card>
+            {loading ? (
+              <Skeleton height={132} radius={radii.md} />
+            ) : data.insurers.length === 0 ? (
+              <EmptyState
+                icon="business"
+                title="No insurer data"
+                message="Policy insurer names appear here after imports or document extraction."
+              />
+            ) : (
+              <View style={styles.insurerList}>
+                {data.insurers.map((item) => (
+                  <InsurerLine key={item.name} item={item} max={data.insurers[0]?.count ?? 1} />
+                ))}
+              </View>
+            )}
+          </Card>
+        </View>
+
+        <View>
+          <SectionHeader
             title="Upcoming renewals"
             subtitle={
               data.rest.length === 0 && !data.featured
@@ -229,17 +260,18 @@ export default function DashboardScreen() {
             ) : (
               data.birthdays.slice(0, 5).map((entry, index) => (
                 <View
-                  key={entry.customer.id}
+                  key={entry.id}
                   style={[
                     styles.listRow,
                     index !== Math.min(4, data.birthdays.length - 1) ? styles.listRowBorder : null,
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowTitle}>{titleCaseName(entry.customer.full_name)}</Text>
+                    <Text style={styles.rowTitle}>{titleCaseName(entry.personName)}</Text>
                     <Text style={styles.rowSub}>
                       {formatDateShort(entry.nextBirthday)}
                       {entry.age ? ` · turns ${entry.age}` : ''}
+                      {entry.isPolicyMember ? ` · ${titleCaseName(entry.customer.full_name)}` : ''}
                     </Text>
                   </View>
                   <Badge
@@ -329,6 +361,30 @@ function HeroStat({ label, value, accent }: { label: string; value: number; acce
     <View style={styles.heroStat}>
       <Text style={[styles.heroStatValue, accent ? styles.heroStatValueAccent : null]}>{value}</Text>
       <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
+  )
+}
+
+function InsurerLine({
+  item,
+  max,
+}: {
+  item: { name: string; count: number; percent: number }
+  max: number
+}) {
+  const width = `${Math.max(6, (item.count / Math.max(max, 1)) * 100)}%` as `${number}%`
+  return (
+    <View style={styles.insurerLine}>
+      <View style={styles.insurerLineTop}>
+        <Text style={styles.insurerName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={styles.insurerCount}>{item.count.toLocaleString('en-IN')}</Text>
+      </View>
+      <View style={styles.insurerTrack}>
+        <View style={[styles.insurerFill, { width }]} />
+      </View>
+      <Text style={styles.insurerMeta}>{item.percent}% of policies</Text>
     </View>
   )
 }
@@ -641,6 +697,42 @@ const styles = StyleSheet.create({
     width: 1,
     height: 28,
     backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  insurerList: {
+    gap: spacing.md,
+  },
+  insurerLine: {
+    gap: 6,
+  },
+  insurerLineTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  insurerName: {
+    flex: 1,
+    ...typography.captionBold,
+    color: colors.text,
+  },
+  insurerCount: {
+    ...typography.captionBold,
+    color: colors.text,
+  },
+  insurerTrack: {
+    height: 9,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+  },
+  insurerFill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  insurerMeta: {
+    ...typography.micro,
+    color: colors.textSubtle,
   },
   /* Featured renewal */
   featuredEyebrowRow: {
