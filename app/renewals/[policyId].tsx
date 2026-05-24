@@ -69,21 +69,19 @@ export default function RenewalDetailScreen() {
                 </View>
               </View>
 
-              {detail.customer?.mobile ? (
+              {detail.customer ? (
                 <View style={styles.actionRow}>
-                  <ContactButton
-                    icon="call"
-                    label="Call"
-                    onPress={() => Linking.openURL(`tel:${detail.customer!.mobile}`)}
-                  />
+                  {detail.customer.mobile ? (
+                    <ContactButton
+                      icon="call"
+                      label="Call"
+                      onPress={() => Linking.openURL(`tel:${detail.customer!.mobile}`)}
+                    />
+                  ) : null}
                   <ContactButton
                     icon="logo-whatsapp"
                     label="WhatsApp"
-                    onPress={() =>
-                      Linking.openURL(
-                        `https://wa.me/91${(detail.customer!.mobile || '').replace(/\D/g, '').slice(-10)}`,
-                      )
-                    }
+                    onPress={() => router.push(`/renewal-message/${detail.policy.id}`)}
                   />
                   {detail.customer?.email ? (
                     <ContactButton

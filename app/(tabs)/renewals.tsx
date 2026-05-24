@@ -221,9 +221,7 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
     if (hasMobile) Linking.openURL(`tel:${mobileDigits}`).catch(() => {})
   }
   const onWhatsApp = () => {
-    if (!hasMobile) return
-    const normalized = mobileDigits.length === 10 ? `91${mobileDigits}` : mobileDigits
-    Linking.openURL(`https://wa.me/${normalized}`).catch(() => {})
+    router.push(`/renewal-message/${entry.policy.id}`)
   }
   const onEmail = () => {
     if (entry.customer?.email) Linking.openURL(`mailto:${entry.customer.email}`).catch(() => {})
@@ -300,7 +298,7 @@ function RenewalCard({ entry }: { entry: RenewalEntry }) {
       <View style={styles.actionRow}>
         <ActionBtn icon="call" label="Call" onPress={onCall} disabled={!hasMobile} />
         <View style={styles.actionDivider} />
-        <ActionBtn icon="logo-whatsapp" label="WhatsApp" onPress={onWhatsApp} disabled={!hasMobile} />
+        <ActionBtn icon="logo-whatsapp" label="WhatsApp" onPress={onWhatsApp} />
         <View style={styles.actionDivider} />
         <ActionBtn icon="mail" label="Email" onPress={onEmail} disabled={!hasEmail} />
       </View>

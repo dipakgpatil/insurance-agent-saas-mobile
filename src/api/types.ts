@@ -242,6 +242,31 @@ export type PolicyRead = {
   policy_extra_data: Record<string, unknown>
 }
 
+export type MessageTemplateRead = {
+  id: string
+  tenant_id: string | null
+  template_type: string
+  channel: string
+  language: 'en' | 'mr' | string
+  name: string
+  body: string
+  placeholders: string[]
+  is_system: boolean
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export type RenderRenewalMessageResponse = {
+  template: MessageTemplateRead
+  policy_id: string
+  customer_id: string
+  customer_mobile: string | null
+  message: string
+  placeholder_values: Record<string, string>
+}
+
 export type FeedbackPromptStatus = {
   should_prompt: boolean
   reason: string | null

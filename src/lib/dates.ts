@@ -1,5 +1,9 @@
 export function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (isoDate) {
+    return new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]))
+  }
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return null
   return startOfDay(parsed)
