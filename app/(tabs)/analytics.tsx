@@ -17,7 +17,9 @@ import {
   buildBirthdays,
   buildRenewals,
   monthlyRenewals,
+  policiesByInsurer,
   renewalsByBucket,
+  type InsurerPolicyStat,
 } from '@/lib/insights'
 import { colors, radii, spacing, typography } from '@/theme'
 
@@ -33,6 +35,7 @@ export default function AnalyticsScreen() {
     const renewals = buildRenewals(policies, customers)
     const buckets = renewalsByBucket(renewals)
     const monthly = monthlyRenewals(policies)
+    const insurers = policiesByInsurer(policies, 8)
     const birthdays = buildBirthdays(customers, policies, 30)
     const today = new Date()
     const thisMonth = today.getMonth()
@@ -48,6 +51,7 @@ export default function AnalyticsScreen() {
     return {
       buckets,
       monthly,
+      insurers,
       birthdays,
       birthdaysThisMonth,
       activePolicies: policies.filter((p) => p.status === 'active').length,
@@ -140,6 +144,27 @@ export default function AnalyticsScreen() {
         </View>
 
         <View>
+          <SectionHeader title="Insurer-wise book" subtitle="Company-wise policy spread" />
+          <Card>
+            {loading ? (
+              <Skeleton height={180} radius={radii.md} />
+            ) : data.insurers.length === 0 ? (
+              <Text style={styles.emptyText}>No insurer data yet.</Text>
+            ) : (
+              <View style={styles.insurerList}>
+                {data.insurers.map((item) => (
+                  <InsurerLine
+                    key={item.name}
+                    item={item}
+                    max={data.insurers[0]?.count ?? 1}
+                  />
+                ))}
+              </View>
+            )}
+          </Card>
+        </View>
+
+        <View>
           <SectionHeader
             title="Renewals across the year"
             subtitle="Due (light) vs completed (filled)"
@@ -196,6 +221,24 @@ export default function AnalyticsScreen() {
   )
 }
 
+function InsurerLine({ item, max }: { item: InsurerPolicyStat; max: number }) {
+  const width = `${Math.max(5, (item.count / Math.max(max, 1)) * 100)}%` as `${number}%`
+  return (
+    <View style={styles.insurerLine}>
+      <View style={styles.insurerLineTop}>
+        <Text style={styles.insurerName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={styles.insurerCount}>{item.count.toLocaleString('en-IN')}</Text>
+      </View>
+      <View style={styles.insurerTrack}>
+        <View style={[styles.insurerFill, { width }]} />
+      </View>
+      <Text style={styles.insurerMeta}>{item.percent}% of policies</Text>
+    </View>
+  )
+}
+
 function BucketLine({ label, count, color }: { label: string; count: number; color: string }) {
   return (
     <View style={styles.bucketLine}>
@@ -228,6 +271,46 @@ const styles = StyleSheet.create({
   kpiCell: {
     flexBasis: '48%',
     flexGrow: 1,
+  },
+  emptyText: {
+    ...typography.caption,
+    color: colors.textSubtle,
+  },
+  insurerList: {
+    gap: spacing.md,
+  },
+  insurerLine: {
+    gap: 6,
+  },
+  insurerLineTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  insurerName: {
+    flex: 1,
+    ...typography.captionBold,
+    color: colors.text,
+  },
+  insurerCount: {
+    ...typography.captionBold,
+    color: colors.text,
+  },
+  insurerTrack: {
+    height: 9,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+  },
+  insurerFill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  insurerMeta: {
+    ...typography.micro,
+    color: colors.textSubtle,
   },
   bucketCol: {
     gap: spacing.sm,

@@ -29,13 +29,13 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
-          paddingTop: 6,
-          paddingBottom: 8,
+          height: 66,
+          paddingTop: 7,
+          paddingBottom: 9,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '700',
         },
       }}
     >
@@ -59,6 +59,7 @@ export default function TabsLayout() {
         name="birthdays"
         options={{
           title: 'Birthdays',
+          href: null,
           tabBarIcon: ({ color, size }) => <Ionicons name="gift" color={color} size={size} />,
         }}
       />
@@ -75,14 +76,15 @@ export default function TabsLayout() {
         name="referrals"
         options={{
           title: 'Refer',
+          href: null,
           tabBarIcon: ({ color, size }) => <Ionicons name="gift" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle" color={color} size={size} />,
+          title: 'Menu',
+          tabBarIcon: ({ color, size }) => <Ionicons name="menu" color={color} size={size} />,
         }}
       />
     </Tabs>

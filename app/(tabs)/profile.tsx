@@ -60,7 +60,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
         <View>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>Menu</Text>
         </View>
 
         <Card>
@@ -115,6 +115,15 @@ export default function ProfileScreen() {
             title="Refer agents and earn"
             subtitle="Share your referral code and unlock benefits."
             onPress={() => router.push('/(tabs)/referrals')}
+            divider
+          />
+          <ToolRow
+            icon="gift"
+            iconColor={colors.primaryDark}
+            iconBg={colors.primaryLight}
+            title="Birthdays"
+            subtitle="See upcoming customer and family birthdays."
+            onPress={() => router.push('/(tabs)/birthdays')}
           />
         </Card>
 
@@ -193,7 +202,7 @@ export default function ProfileScreen() {
         </Pressable>
 
         <Text style={styles.footer}>
-          PolicyOffice · {versionText}
+          PolicyOffice - {versionText}
         </Text>
       </ScreenContainer>
     </SafeAreaView>

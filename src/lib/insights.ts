@@ -70,6 +70,17 @@ export function buildRenewals(
     .sort((a, b) => a.renewalDate.getTime() - b.renewalDate.getTime())
 }
 
+export function buildUpcomingRenewals(
+  policies: PolicyRead[],
+  customers: CustomerRead[],
+  horizonDays = 60,
+  today = startOfDay(new Date()),
+): RenewalEntry[] {
+  return buildRenewals(policies, customers, today).filter(
+    (entry) => isOpenPolicyStatus(entry.policy.status) && entry.daysUntil >= 0 && entry.daysUntil <= horizonDays,
+  )
+}
+
 export function renewalsByBucket(entries: RenewalEntry[]): Record<RenewalBucket, RenewalEntry[]> {
   const buckets: Record<RenewalBucket, RenewalEntry[]> = {
     overdue: [],
@@ -140,6 +151,11 @@ export function policiesByInsurer(policies: PolicyRead[], limit = 6): InsurerPol
     ...item,
     percent: Math.round((item.count / total) * 100),
   }))
+}
+
+function isOpenPolicyStatus(status: string | null | undefined): boolean {
+  const normalized = (status || '').toLowerCase()
+  return normalized === '' || normalized === 'active'
 }
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

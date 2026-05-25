@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
 import * as Linking from 'expo-linking'
 import { router } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -24,7 +23,7 @@ import { compactCurrency, formatCurrency, toNumber } from '@/lib/currency'
 import { formatDateShort, relativeRenewal } from '@/lib/dates'
 import {
   buildBirthdays,
-  buildRenewals,
+  buildUpcomingRenewals,
   policiesByInsurer,
   type RenewalBucket,
   type RenewalEntry,
@@ -70,27 +69,25 @@ export default function DashboardScreen() {
   }, [accessToken])
 
   const data = useMemo(() => {
-    const renewals = buildRenewals(policies, customers)
+    const upcoming = buildUpcomingRenewals(policies, customers, 60)
     const birthdays = buildBirthdays(customers, policies, 30)
     const insurers = policiesByInsurer(policies, 5)
-    const upcoming = renewals
-      .filter((entry) => entry.daysUntil >= -30 && entry.daysUntil <= 60)
-      .slice(0, 8)
-    const overdueCount = renewals.filter((r) => r.bucket === 'overdue').length
-    const thisWeekCount = renewals.filter(
+    const visibleUpcoming = upcoming.slice(0, 8)
+    const todayCount = upcoming.filter((r) => r.bucket === 'today').length
+    const thisWeekCount = upcoming.filter(
       (r) => r.bucket === 'today' || r.bucket === 'tomorrow' || r.bucket === 'this_week',
     ).length
-    const totalPremiumThisCycle = upcoming.reduce(
+    const totalPremiumThisCycle = visibleUpcoming.reduce(
       (sum, entry) => sum + toNumber(entry.policy.premium_amount),
       0,
     )
     return {
       birthdays,
       insurers,
-      upcoming,
-      featured: upcoming[0] ?? null,
-      rest: upcoming.slice(1),
-      overdueCount,
+      upcoming: visibleUpcoming,
+      featured: visibleUpcoming[0] ?? null,
+      rest: visibleUpcoming.slice(1),
+      todayCount,
       thisWeekCount,
       totalPremiumThisCycle,
     }
@@ -120,8 +117,8 @@ export default function DashboardScreen() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Hi {firstName} 👋</Text>
-            <Text style={styles.greetingSub}>Here&apos;s what needs attention today.</Text>
+            <Text style={styles.greeting}>Hi {firstName}</Text>
+            <Text style={styles.greetingSub}>A calm view of renewals, customers, and follow-ups.</Text>
           </View>
           <Pressable
             onPress={() => router.push('/import-excel')}
@@ -141,12 +138,12 @@ export default function DashboardScreen() {
 
         {error ? <ErrorBanner message={error} /> : null}
 
-        {/* Gradient hero — premium summary for the cycle */}
+        {/* Premium summary for the active renewal cycle */}
         <HeroCard
           loading={loading}
           total={data.totalPremiumThisCycle}
           upcomingCount={data.upcoming.length}
-          overdueCount={data.overdueCount}
+          todayCount={data.todayCount}
           thisWeekCount={data.thisWeekCount}
         />
 
@@ -305,61 +302,57 @@ function HeroCard({
   loading,
   total,
   upcomingCount,
-  overdueCount,
+  todayCount,
   thisWeekCount,
 }: {
   loading: boolean
   total: number
   upcomingCount: number
-  overdueCount: number
+  todayCount: number
   thisWeekCount: number
 }) {
   return (
     <View style={styles.heroWrap}>
-      <LinearGradient
-        colors={['#1e3a8a', '#2563eb', '#7c3aed']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
-        {/* Decorative blobs */}
-        <View style={[styles.heroBlob, styles.heroBlobA]} />
-        <View style={[styles.heroBlob, styles.heroBlobB]} />
-
+      <View style={styles.hero}>
         <View style={styles.heroEyebrowRow}>
-          <Text style={styles.heroEyebrow}>RENEWAL OUTLOOK</Text>
-          <View style={styles.heroEyebrowDot} />
-          <Text style={styles.heroEyebrowMeta}>Live</Text>
+          <View style={styles.heroIcon}>
+            <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
+          </View>
+          <View>
+            <Text style={styles.heroEyebrow}>NEXT 60 DAYS</Text>
+            <Text style={styles.heroEyebrowMeta}>Only upcoming active renewals</Text>
+          </View>
+        </View>
+        <View style={styles.heroAmountRow}>
+          {loading ? (
+            <Text style={styles.heroAmount}>-</Text>
+          ) : (
+            <Text style={styles.heroAmount}>{compactCurrency(total)}</Text>
+          )}
+          <Text style={styles.heroAmountSub}>
+            {upcomingCount} renewal{upcomingCount === 1 ? '' : 's'}
+          </Text>
         </View>
 
-        {loading ? (
-          <Text style={styles.heroAmount}>—</Text>
-        ) : (
-          <Text style={styles.heroAmount}>{compactCurrency(total)}</Text>
-        )}
-        <Text style={styles.heroAmountSub}>
-          across {upcomingCount} renewal{upcomingCount === 1 ? '' : 's'}
-        </Text>
-
         <View style={styles.heroStatsRow}>
-          <HeroStat label="Overdue" value={overdueCount} accent={overdueCount > 0} />
+          <HeroStat label="Today" value={todayCount} />
           <View style={styles.heroDivider} />
           <HeroStat label="This week" value={thisWeekCount} />
           <View style={styles.heroDivider} />
           <HeroStat
             label="Later"
-            value={Math.max(0, upcomingCount - overdueCount - thisWeekCount)}
+            value={Math.max(0, upcomingCount - thisWeekCount)}
           />
         </View>
-      </LinearGradient>
+      </View>
     </View>
   )
 }
 
-function HeroStat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function HeroStat({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.heroStat}>
-      <Text style={[styles.heroStatValue, accent ? styles.heroStatValueAccent : null]}>{value}</Text>
+      <Text style={styles.heroStatValue}>{value}</Text>
       <Text style={styles.heroStatLabel}>{label}</Text>
     </View>
   )
@@ -595,78 +588,65 @@ const styles = StyleSheet.create({
     color: colors.success,
     flex: 1,
   },
-  /* Hero gradient card */
+  /* Hero card */
   heroWrap: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    ...shadows.floating,
+    ...shadows.card,
   },
   hero: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     position: 'relative',
     overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    borderRadius: 999,
-    opacity: 0.18,
-  },
-  heroBlobA: {
-    width: 160,
-    height: 160,
-    top: -60,
-    right: -40,
-    backgroundColor: '#ffffff',
-  },
-  heroBlobB: {
-    width: 110,
-    height: 110,
-    bottom: -50,
-    right: 80,
-    backgroundColor: '#a78bfa',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   heroEyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.md,
+  },
+  heroIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
   },
   heroEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: 'rgba(255,255,255,0.78)',
-  },
-  heroEyebrowDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#86efac',
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.primaryDark,
   },
   heroEyebrowMeta: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#86efac',
-    letterSpacing: 0.6,
-  },
-  heroAmount: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: -1,
-    marginTop: 8,
-  },
-  heroAmountSub: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.78)',
+    ...typography.caption,
+    color: colors.textSubtle,
     marginTop: 2,
   },
+  heroAmountRow: {
+    marginTop: spacing.lg,
+  },
+  heroAmount: {
+    fontSize: 34,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 0,
+  },
+  heroAmountSub: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
   heroStatsRow: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.18)',
+    borderTopColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -678,22 +658,19 @@ const styles = StyleSheet.create({
   heroStatValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#ffffff',
-  },
-  heroStatValueAccent: {
-    color: '#fca5a5',
+    color: colors.text,
   },
   heroStatLabel: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.textSubtle,
     marginTop: 2,
   },
   heroDivider: {
     width: 1,
     height: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.border,
   },
   insurerList: {
     gap: spacing.md,

@@ -41,14 +41,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     ...shadows.card,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -59,7 +59,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   value: {
-    ...typography.title,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 25,
     color: colors.text,
   },
   hint: {

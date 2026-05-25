@@ -43,7 +43,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export default function RenewalsScreen() {
   const params = useLocalSearchParams<{ filter?: string }>()
-  const initialFilter = (params.filter as FilterKey) ?? 'all'
+  const initialFilter = (params.filter as FilterKey) ?? 'today'
 
   const { customers, loading: customersLoading, error: customersError, refresh: refreshCustomers } =
     useCustomers()
@@ -100,7 +100,7 @@ export default function RenewalsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Renewals</Text>
         <Text style={styles.subtitle}>
-          {loading ? 'Loading…' : `${renewals.length} dated policies`}
+          {loading ? 'Loading...' : 'Today is selected by default'}
         </Text>
       </View>
 
