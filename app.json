@@ -2,7 +2,7 @@
   "expo": {
     "name": "PolicyOffice",
     "slug": "policyoffice-mobile",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": [
@@ -34,7 +34,7 @@
     },
     "android": {
       "package": "com.policyoffice.mobile",
-      "versionCode": 3,
+      "versionCode": 4,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
