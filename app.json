@@ -71,7 +71,7 @@
     "extra": {
       "apiBaseUrl": "https://api.policyoffice.in/api/v1",
       "googleWebClientId": "",
-      "googleIosClientId": "",
+      "googleIosClientId": "491076784026-raea045054it28h418q5samlkaqdv1lf.apps.googleusercontent.com",
       "googleAndroidClientId": "",
       "router": {
         "origin": false
